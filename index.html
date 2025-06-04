@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // BLOQUEIO DE ACESSO IMEDIATO COM DELAY DE 2 MINUTOS
+        const userId = localStorage.getItem('user_id');
+        console.log('Verificando user_id no localStorage:', userId);
+        
+        if (!userId) {
+            console.warn('Usuário não autenticado. Redirecionando para a página de login em 2 minutos.');
+            const mainElement = document.querySelector('main');
+            const headerElement = document.querySelector('header');
+            if (mainElement) mainElement.classList.add('hidden');
+            if (headerElement) headerElement.classList.add('hidden');
+            
+            const loginModal = document.getElementById('login-modal');
+            if (loginModal) loginModal.style.display = 'block';
+            
+            let okClicked = false;
+            const modalOkButton = document.getElementById('modal-ok-button');
+            if (modalOkButton) {
+                modalOkButton.onclick = function() {
+                    okClicked = true;
+                    window.location.href = 'my_future.html';
+                };
+            }
+            
+            setTimeout(function () {
+                if (!okClicked) {
+                    window.location.href = 'my_future.html';
+                }
+            }, 2 * 60 * 1000); // 2 minutos em milissegundos
+        }
+    });
+</script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <style>
+        /* Paleta de cores */
+        :root {
+            --primary-color: #2a9d8f; /* Verde suave */
+            --secondary-color: #264653; /* Azul escuro */
+            --background-color: #f0f4f8; /* Cinza claro */
+            --text-color: #333; /* Texto principal */
+            --accent-color: #e76f51; /* Vermelho suave */
+            --hover-color: #f4a261; /* Laranja suave */
+            --card-background-color: rgba(255, 255, 255, 0.9);
+            --card-text-color: #333;
+            --card-secondary-text-color: #555;
+            --button-text-color: #fff; /* Cor do texto para botões com fundo colorido */
+            --header-background-color: var(--secondary-color);
+            --header-text-color: #fff;
+            --popup-background-color: #fff;
+            --popup-text-color: var(--text-color);
+            --popup-border-color: var(--primary-color);
+            --link-color: var(--primary-color);
+            --link-bg-color: rgba(42, 157, 143, 0.1);
+            --link-hover-bg-color: rgba(42, 157, 143, 0.2);
+            --input-bg-color: #fff;
+            --input-border-color: #ccc;
+            --input-text-color: #333;
+            --footer-bg-color: var(--background-color);
+            --footer-text-color: var(--text-color);
+            --footer-border-color: #ddd;
+        }
+
+        body.dark-mode {
+            --primary-color: #38b2ac; 
+            --secondary-color: #2c3e50; 
+            --background-color: #1a202c; 
+            --text-color: #e2e8f0; 
+            --accent-color: #f6ad55; 
+            --hover-color: #ed8936; 
+            --card-background-color: #2d3748; 
+            --card-text-color: #e2e8f0;
+            --card-secondary-text-color: #a0aec0; 
+            --button-text-color: #e2e8f0; /* Texto claro para botões no dark mode */
+            --header-background-color: #2c3e50;
+            --header-text-color: #e2e8f0;
+            --popup-background-color: #2d3748;
+            --popup-text-color: #e2e8f0;
+            --popup-border-color: var(--primary-color);
+            --link-color: var(--primary-color);
+            --link-bg-color: rgba(56, 178, 172, 0.1);
+            --link-hover-bg-color: rgba(56, 178, 172, 0.2);
+            --input-bg-color: #2d3748;
+            --input-border-color: #4a5568;
+            --input-text-color: #e2e8f0;
+            --footer-bg-color: #1a202c;
+            --footer-text-color: #a0aec0;
+            --footer-border-color: #4a5568;
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', Arial, sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            color: var(--text-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        header nav {
+            display: flex;
+            justify-content: space-between; 
+            align-items: center;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-left span {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--header-text-color);
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .nav-left span::before {
+            content: "👋";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2rem;
+        }
+
+        #username-display {
+            font-weight: 600;
+            color: var(--hover-color);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            position: relative;
+            display: inline-block;
+            vertical-align: middle;
+            overflow: hidden;
+        }
+
+        #username-display::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shine 3s infinite;
+            pointer-events: none;
+        }
+
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 100%; }
+            100% { left: 100%; }
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 15px; 
+        }
+
+        header nav ul { /* applies to .mobile-menu now */
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        header nav ul li {
+            margin: 0;
+        }
+
+        header nav ul li a {
+            color: var(--header-text-color);
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            background-color: transparent !important;
+            border: none !important; 
+            transition: all 0.3s ease;
+        }
+
+        header nav ul li a:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            transform: translateY(-2px);
+        }
+        
+        /* START: Theme toggle button styles */
+        .nav-right ul li#theme-toggle-li {
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        #theme-toggle {
+            background: transparent;
+            border: none;
+            color: var(--header-text-color);
+            font-size: 1.5rem; /* Adjust icon size as needed */
+            cursor: pointer;
+            padding: 10px 15px; /* Consistent with other nav links */
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #theme-toggle:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            transform: translateY(-2px);
+        }
+        /* END: Theme toggle button styles */
+
+
+        header {
+            background-color: var(--header-background-color);
+            color: var(--header-text-color);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        main {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: stretch;
+            min-height: calc(100vh - 150px); 
+            padding: 0 20px 50px 20px; 
+            box-sizing: border-box;
+            margin-top: 70px; 
+        }
+
+        .section {
+            display: none; 
+        }
+
+        .section.active {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-sizing: border-box;
+        }
+
+        .video-item, .file-item, .notice-item, .link-item {
+            display: flex;
+            flex-direction: column;
+            background-color: var(--card-background-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            box-sizing: border-box;
+            height: fit-content;
+            width: 100%;
+            min-height: 200px;
+        }
+
+        .video-item h3, .file-item h3, .notice-item h3, .link-item h3 {
+            margin: 0 0 10px 0;
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            color: var(--card-text-color);
+            line-height: 1.4;
+        }
+
+        .video-item p, .file-item p, .notice-item p, .link-item p {
+            margin: 0 0 10px 0;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            color: var(--card-secondary-text-color);
+            line-height: 1.4;
+            word-wrap: break-word; 
+        }
+
+        .video-item iframe {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border: none;
+            border-radius: 8px;
+            margin: 0 0 10px 0;
+            min-height: 200px;
+        }
+
+        .file-item a, .link-item a {
+            display: inline-block;
+            color: var(--link-color);
+            text-decoration: none;
+            font-weight: bold;
+            padding: 8px 15px;
+            background-color: var(--link-bg-color);
+            border-radius: 5px;
+            margin-top: auto;
+            transition: all 0.3s ease;
+            align-self: flex-start; 
+        }
+
+        .file-item a:hover, .link-item a:hover {
+            background-color: var(--link-hover-bg-color);
+            transform: translateY(-2px);
+        }
+
+        @media (min-width: 768px) { 
+            .section.active { gap: 25px; padding: 25px; }
+            .video-item, .file-item, .notice-item, .link-item {
+                flex: 1 1 calc(50% - 25px); 
+                min-width: calc(50% - 25px); 
+                min-height: 250px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .section.active { gap: 30px; padding: 30px; }
+            .video-item, .file-item, .notice-item, .link-item {
+                flex: 1 1 calc(33.33% - 30px); 
+                min-width: calc(33.33% - 30px);
+                min-height: 280px;
+            }
+        }
+
+        @media (max-width: 767px) { 
+            .section.active { gap: 15px; padding: 15px; }
+            .video-item, .file-item, .notice-item, .link-item {
+                width: 100%; 
+                min-height: 200px;
+                margin-bottom: 15px;
+                flex-basis: 100%;
+            }
+        }
+        
+        @media (max-width: 1024px) { 
+            header { position: fixed; top: 0; left: 0; right: 0; }
+            main { margin-top: 80px; padding-top: 20px; }
+        }
+
+        .blurred { filter: blur(5px); pointer-events: none; }
+        .hidden { display: none !important; }
+
+        .nav-right ul { /* This is .mobile-menu */
+            list-style: none; margin: 0; padding: 0; display: flex; align-items: center; gap: 20px;
+        }
+        .nav-right ul li { margin: 0; }
+        .nav-right ul li a {
+            color: var(--header-text-color); text-decoration: none; padding: 10px 15px; border-radius: 5px;
+            background-color: transparent !important; border: none !important; transition: all 0.3s ease;
+        }
+        .nav-right ul li a:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important; transform: translateY(-2px);
+        }
+
+        .nav-right ul li a.logout-button { 
+            background-color: transparent !important; border: none !important; color: #dc3545 !important; 
+        }
+        .nav-right ul li a.logout-button:hover {
+            background-color: rgba(220, 53, 69, 0.1) !important; color: var(--header-text-color) !important; 
+        }
+
+        .nav-right ul li a[href="admin.html"] {
+            background-color: transparent !important; color: var(--header-text-color); transition: all 0.3s ease;
+        }
+        .nav-right ul li a[href="admin.html"]:hover {
+            background-color: rgba(255, 255, 255, 0.1) !important; transform: translateY(-2px);
+        }
+
+        .hamburger { display: none; cursor: pointer; padding: 10px; position: relative; z-index: 1001; }
+        .hamburger span { display: block; width: 25px; height: 3px; background-color: var(--header-text-color); margin: 5px 0; transition: 0.3s; }
+
+        @media (max-width: 1094px) { 
+            .hamburger { display: block; position: fixed; top: 15px; right: 20px; }
+            .nav-left { padding-right: 70px; width: calc(100% - 90px); }
+            .nav-left img { height: 40px; width: auto; }
+            .nav-left span { font-size: 0.9rem; padding-left: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100% - 60px); }
+            .nav-left span::before { font-size: 1rem; }
+            
+            .mobile-menu { 
+                display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+                background-color: var(--header-background-color); /* Uses theme's header bg */
+                opacity: 0.98; /* Slight transparency */
+                flex-direction: column; align-items: center; justify-content: center; 
+                padding: 20px; gap: 15px; z-index: 1000; overflow-y: auto; 
+                transition: opacity 0.3s ease, visibility 0.3s ease; 
+                opacity: 0; visibility: hidden;
+            }
+            body.dark-mode .mobile-menu { /* Ensure correct bg in dark mode if needed, though var should handle it */
+                 background-color: var(--header-background-color);
+                 opacity: 0.98;
+            }
+
+            .mobile-menu.active { display: flex; opacity: 1; visibility: visible; }
+            .mobile-menu li { width: 80%; max-width: 300px; text-align: center; }
+            .mobile-menu li a {
+                display: block; padding: 12px; font-size: 1.1rem; 
+                background-color: var(--primary-color); color: var(--button-text-color);
+                border-radius: 8px; transition: background-color 0.3s ease, transform 0.2s ease;
+                text-decoration: none;
+            }
+            .mobile-menu li a:hover { background-color: var(--hover-color); transform: scale(1.05); }
+            
+            .mobile-menu .profile-item { display: block; width: auto; margin-bottom: 20px; padding-bottom: 0; border-bottom: none; }
+            .mobile-menu .profile-item img { width: 60px; height: 60px; margin: 0 auto 10px auto; }
+
+            /* Theme toggle in mobile menu */
+            .mobile-menu.active li#theme-toggle-li {
+                width: 80%; max-width: 300px; text-align: center;
+                margin-top: 10px; /* Optional spacing */
+            }
+            .mobile-menu.active #theme-toggle {
+                display: block; width: 100%; padding: 12px; font-size: 1.1rem;
+                background-color: var(--primary-color); color: var(--button-text-color);
+                border-radius: 8px; transition: background-color 0.3s ease, transform 0.2s ease;
+            }
+            .mobile-menu.active #theme-toggle:hover {
+                background-color: var(--hover-color); transform: scale(1.05);
+            }
+        }
+        
+        @media (min-width: 1095px) { 
+            .hamburger { display: none; }
+            .mobile-menu { 
+                position: static; display: flex; flex-direction: row; width: auto; height: auto;
+                padding: 0; background-color: transparent; opacity: 1; visibility: visible;
+                overflow-y: visible; gap: 15px; 
+            }
+            .mobile-menu li { width: auto; text-align: left; }
+            .mobile-menu li a { 
+                color: var(--header-text-color); text-decoration: none; padding: 10px 15px; border-radius: 5px;
+                background-color: transparent !important; border: none !important; 
+                transition: all 0.3s ease; font-size: 1rem; 
+            }
+            .mobile-menu li a:hover { 
+                background-color: rgba(255, 255, 255, 0.1) !important; transform: translateY(-2px); 
+            }
+            .mobile-menu .profile-item { display: block; margin: 0 0 0 20px; padding: 0; border: none; width: auto; order: 2; }
+            .mobile-menu .profile-item img { width: 40px; height: 40px; margin: 0; border: 2px solid var(--header-text-color); }
+            
+            .mobile-menu li#theme-toggle-li { order: 1; width: auto; } /* Adjust order as needed */
+            #theme-toggle { /* Reset to desktop style */
+                background: transparent;
+                border: none;
+                color: var(--header-text-color);
+                font-size: 1.5rem;
+                padding: 10px 15px;
+            }
+            #theme-toggle:hover {
+                background-color: rgba(255, 255, 255, 0.1) !important;
+                transform: translateY(-2px);
+            }
+            .mobile-menu li:not(.profile-item):not(#theme-toggle-li) { order: -1; } /* Outros links antes */
+             /* Specific order for admin if present */
+            .mobile-menu li a[href="admin.html"] { order: 0; } /* Example: admin before theme toggle */
+        }
+
+        @keyframes floatVertical {
+            0% { transform: translateY(0); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0); }
+        }
+        .nav-left img { height: 60px; width: auto; animation: floatVertical 3s ease-in-out infinite; }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .blink-highlight { color: #e53935; font-weight: bold; animation: blink-highlight 1s infinite; }
+        @keyframes blink-highlight { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .color-highlight { color: #e53935; font-weight: bold; }
+        #modal-ok-button:disabled { background-color: #ccc; cursor: not-allowed; opacity: 0.7; }
+
+        /* Popup styles using variables */
+        #help-popup, #tutorials-popup, #login-modal, #admin-welcome-popup, #profile-popup {
+            background-color: var(--popup-background-color);
+            color: var(--popup-text-color);
+            border: 1px solid var(--popup-border-color);
+        }
+        #profile-popup input[type="text"], 
+        #profile-popup input[type="password"] {
+            background-color: var(--input-bg-color) !important; /* important to override inline styles if any */
+            color: var(--input-text-color) !important;
+            border: 1px solid var(--input-border-color) !important;
+        }
+        #profile-popup label { color: var(--popup-text-color); }
+
+        /* Footer styles */
+        footer {
+            text-align: center; padding: 10px; font-size: 0.8rem;
+            color: var(--footer-text-color); background-color: var(--footer-bg-color);
+            border-top: 1px solid var(--footer-border-color);
+            z-index: 1000; margin-top: 20px;
+        }
+
+    </style>
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div class="nav-left">
+                <img src="./imagens/pibid.png" alt="Logo" style="height: 60px; width: auto;">
+                <span>Olá, <span id="username-display">Carregando...</span>!</span>
+            </div>
+            <div class="nav-right">
+                <div class="hamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <ul class="mobile-menu"> 
+                    <li class="profile-item">
+                        <img id="nav-profile-image" src="./perfil_image/avatar-padrao.webp" alt="Perfil" style="
+                            width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+                            display: block; border: 2px solid var(--header-text-color);
+                        ">
+                    </li>
+                    <li><a href="#cursos">Cursos</a></li>
+                    <li><a href="#estudando">Estudando</a></li>
+                    <li><a href="#calendario">Calendário</a></li>
+                    <li id="theme-toggle-li">
+                        <button id="theme-toggle" title="Alternar tema">
+                            <span id="theme-icon">☀️</span>
+                        </button>
+                    </li>
+                    <li><a href="my_future.html" class="logout-button">Sair</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="section cursos" id="cursos"></div>
+        <div class="section estudando" id="estudando"></div>
+        <div class="section calendario" id="calendario"></div>
+    </main>
+
+    <button id="help-button" style="
+        position: fixed; bottom: 20px; right: 20px; background-color: var(--primary-color);
+        color: var(--button-text-color); border: none; border-radius: 50%; width: 50px; height: 50px;
+        font-size: 24px; cursor: pointer; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); z-index: 990;
+    ">?</button>
+
+    <div id="help-popup" style="
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        /* background-color & color are set by CSS rule using variables */
+        border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 300px; max-width: 90%; z-index: 1100;
+    ">
+        <h3 style="margin-top: 0; color: var(--secondary-color);">Sobre o Portal</h3>
+        <p>Este portal foi criado com o objetivo de facilitar o acesso a materiais educativos, vídeos e recados importantes para os participantes do programa PIBID. Ele visa promover a organização e a disseminação de informações de forma eficiente.</p>
+        <p>==================</p>
+        <p>Gostou do ambiente? Faça uma sugestão de como podemos melhorar.</p>
+        <button style="
+            background-color: var(--primary-color); color: var(--button-text-color); border: none;
+            border-radius: 5px; padding: 10px 15px; cursor: pointer; font-size: 14px;
+            transition: background-color 0.3s ease; margin-bottom: 5px;" 
+            onclick="window.open('https://wa.me/5582981083015', '_blank')">Sugerir</button>
+        <button id="tutorials-btn" style="
+            background-color: var(--hover-color); color: var(--button-text-color); border: none;
+            border-radius: 5px; padding: 10px 15px; cursor: pointer; font-size: 14px;
+            margin-left: 10px; margin-top: 10px; margin-bottom: 5px; transition: background-color 0.3s ease;
+        ">Tutoriais</button>
+        <button id="close-popup" style="
+            background-color: var(--accent-color); color: var(--button-text-color); border: none;
+            border-radius: 5px; padding: 5px 10px; cursor: pointer; margin-top: 10px;
+        ">Fechar</button>
+    </div>
+
+    <div id="tutorials-popup" style="
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 260px; max-width: 90%; z-index: 1150; text-align: center;
+    ">
+        <h3 style="margin-top: 0; color: var(--secondary-color);">Tutoriais</h3>
+        <p>Escolha o tutorial:</p>
+        <button style="
+            background-color: var(--primary-color); color: var(--button-text-color); border: none;
+            border-radius: 5px; padding: 8px 12px; cursor: pointer; font-size: 13px;
+            margin-right: 8px; margin-bottom: 5px;
+        " onclick="window.open('https://www.youtube.com/embed/VIDEO_ID_COMPUTADOR', '_blank')">Computador</button>
+        <button style="
+            background-color: var(--primary-color); color: var(--button-text-color); border: none;
+            border-radius: 5px; padding: 8px 12px; cursor: pointer; font-size: 13px; margin-bottom: 5px;
+        " onclick="window.open('https://www.youtube.com/embed/VIDEO_ID_CELULAR', '_blank')">Celular</button>
+        <br>
+        <button id="close-tutorials-popup" style="
+            background-color: var(--accent-color); color: var(--button-text-color); border: none;
+            border-radius: 5px; padding: 5px 10px; cursor: pointer; margin-top: 10px;
+        ">Fechar</button>
+    </div>
+
+    <div id="login-modal" style="
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        border-radius: 8px; padding: 20px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        width: 300px; max-width: 90%; z-index: 1300; text-align: center;
+    ">
+        <h3 style="margin-top: 0; color: var(--secondary-color);">Acesso Restrito</h3>
+        <p style="color: red; font-weight: bold; animation: blink 1s infinite;">⚠️ ATENÇÃO!</p>
+        <style> @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } } </style>
+        <p>Após o seu primeiro login, poderá aparecer um AVISO, quando isso acontecer apenas clique em FECHAR.</p>
+        <p>===================</p>
+        <p>Você precisa fazer login para acessar o portal. Clique em "OK" para prosseguir.</p>
+        <p id="countdown-timer" style="font-size:1.2em;font-weight:bold;color:var(--primary-color);margin:10px 0;">Aguarde: 2:00</p>
+        <button id="modal-ok-button" style="background-color:var(--accent-color);color:var(--button-text-color);border:none;border-radius:5px;padding:10px 20px;cursor:pointer;margin-top:10px;">OK</button>
+    </div>
+
+    <div id="admin-welcome-popup" style="
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        border-radius: 8px; padding: 25px; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        width: 380px; max-width: 90%; z-index: 1250; text-align: center;
+    ">
+        <h3 style="margin-top:0;color:var(--secondary-color);font-size:1.4em;">🎉 Parabéns, <span id="admin-welcome-name"></span>! 🎉</h3>
+        <p style="font-size:1.05em;margin-bottom:15px;">Você agora é um <strong>Administrador(a)</strong> do portal!</p>
+        <p style="font-size:0.9em;line-height:1.5;text-align:left;margin-bottom:20px;">
+            Isso significa que você tem permissões elevadas, incluindo acesso ao <strong>Painel de Administração</strong>.
+            Lá, você poderá gerenciar usuários, adicionar ou remover conteúdos como avisos, vídeos, documentos, links importantes, e configurar outros aspectos do portal.
+        </p>
+        <p style="font-size:0.85em;color:#555;margin-bottom:25px;">Use seus poderes com responsabilidade!</p>
+        <button id="close-admin-welcome-popup" style="background-color:var(--primary-color);color:var(--button-text-color);border:none;border-radius:5px;padding:10px 20px;cursor:pointer;font-size:0.95em;transition:background-color 0.3s ease;">Entendido!</button>
+    </div>
+
+    <div id="profile-popup" style="
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        /* background: white; -- overridden by CSS var */
+        padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        z-index: 1200; width: 300px; max-width: 90%; text-align: center;
+    ">
+        <div style="margin-bottom:15px;">
+            <img id="popup-profile-image" src="./perfil_image/avatar-padrao.webp" alt="Foto de Perfil" style="width:100px;height:100px;border-radius:50%;border:3px solid var(--primary-color);object-fit:cover;">
+        </div>
+        <div id="user-info" style="margin-bottom:20px;">
+            <p><strong>Nome:</strong> <input id="popup-name" type="text" style="width:calc(100% - 12px);padding:6px;box-sizing:border-box;" /></p>
+            <p><strong>Tipo de Usuário:</strong> <span id="popup-tipo"></span></p>
+            <p><strong>Senha:</strong> 
+                <input id="popup-password" type="password" style="width:calc(100% - 12px);padding:6px;box-sizing:border-box;" />
+                <input type="checkbox" id="toggle-password" style="margin-left:8px;vertical-align:middle;">
+                <label for="toggle-password" style="font-size:0.9em;cursor:pointer;">Mostrar</label>
+            </p>
+            <button id="save-profile-btn" style="background-color:var(--primary-color);color:var(--button-text-color);border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:10px;">Salvar</button>
+            <div id="upload-container" style="margin-top:15px;"></div>
+            <div id="save-status" style="margin-top:8px;font-size:0.9em;"></div>
+            <div id="upload-status" style="margin-top:8px; font-size:0.9em;"></div>
+        </div>
+        <button id="close-profile-popup" style="background-color:var(--accent-color);color:var(--button-text-color);border:none;padding:8px 16px;border-radius:4px;cursor:pointer;margin-top:10px;">Fechar</button>
+    </div>
+
+    <script>
+        const hamburger = document.querySelector('.hamburger');
+        const navMenu = document.querySelector('.mobile-menu'); 
+        // ======= SUPABASE CONNECTION =======
+        const SUPABASE_URL_MAIN = 'https://zzrylgsjksrjotgcwavt.supabase.co'; // Renomeado para evitar conflito se supabase já estiver no escopo global
+        const SUPABASE_KEY_MAIN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cnlsZ3Nqa3Nyam90Z2N3YXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4Mjc0OTYsImV4cCI6MjA2NDQwMzQ5Nn0.caBlCmOqKonuxTPacPIHH1FeVZFr8AJKwpz_v1Q3BwM';
+        const supabase = window.supabase.createClient(SUPABASE_URL_MAIN, SUPABASE_KEY_MAIN); // Usar window.supabase para garantir que estamos usando o cliente global
+        // ==================================
+
+        // START: Theme Toggle Functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const body = document.body;
+        
+        const sunIcon = '☀️';
+        const moonIcon = '🌙';
+
+        function applyTheme(theme) {
+            if (theme === 'dark') {
+                body.classList.add('dark-mode');
+                if (themeIcon) themeIcon.textContent = moonIcon;
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark-mode');
+                if (themeIcon) themeIcon.textContent = sunIcon;
+                localStorage.setItem('theme', 'light');
+            }
+            // Mark that user made an explicit choice
+            localStorage.setItem('theme_explicitly_set', 'true');
+        }
+
+        // Apply saved theme or system preference on page load
+        const currentTheme = localStorage.getItem('theme');
+        if (currentTheme) {
+            applyTheme(currentTheme);
+        } else {
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                applyTheme('dark');
+            } else {
+                applyTheme('light'); // Default to light
+            }
+        }
+
+        if (themeToggle) {
+            themeToggle.addEventListener('click', function () {
+                if (body.classList.contains('dark-mode')) {
+                    applyTheme('light');
+                } else {
+                    applyTheme('dark');
+                }
+            });
+        }
+
+        // Listen for system theme changes (optional)
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                // Only change if user hasn't explicitly set a theme
+                if (!localStorage.getItem('theme_explicitly_set')) {
+                    const newColorScheme = event.matches ? "dark" : "light";
+                    applyTheme(newColorScheme);
+                }
+            });
+        }
+        // END: Theme Toggle Functionality
+
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+            const selectedSection = document.getElementById(sectionId);
+            if (selectedSection) selectedSection.classList.add('active');
+        }
+
+    // Atualiza o menu para funcionar só com cursos, estudando e calendario
+    document.querySelectorAll('.mobile-menu li a').forEach(link => {
+        link.addEventListener('click', (e) => {
+            if (link.classList.contains('logout-button') || link.getAttribute('href') === 'admin.html') {
+                return; 
+            }
+            // Ignora o botão de tema
+            if (link.closest('#theme-toggle-li')) {
+                return;
+            }
+            e.preventDefault();
+            const sectionId = link.getAttribute('href').substring(1);
+            showSection(sectionId);
+            if (window.innerWidth <= 1094) { 
+                navMenu.classList.remove('active');
+            }
+        });
+    });
+
+    // Mostra a seção "cursos" ao carregar a página
+    document.addEventListener('DOMContentLoaded', () => {
+        checkUserLoggedIn(); 
+        showSection('cursos'); // Agora mostra "cursos" por padrão
+        loadBannersFromDatabase(); // Se quiser banners nas novas seções
+
+        const currentYearSpan = document.getElementById('current-year');
+        if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
+    });
+
+        async function checkUserLoggedIn() {
+            const currentUserId = localStorage.getItem('user_id'); 
+            if (!currentUserId) {
+                showLoginModal(); 
+                return;
+            }
+
+            const { data, error } = await supabase.from('users').select('name, tipo, perfil_image').eq('id', currentUserId).single();
+
+            if (error || !data) {
+                console.error('Erro ao buscar usuário ou usuário não encontrado:', error);
+                showLoginModal();
+            } else {
+                document.getElementById('username-display').textContent = data.name;
+                const profileImage = data.perfil_image || './perfil_image/avatar-padrao.webp';
+                document.getElementById('nav-profile-image').src = profileImage;
+
+                if (data.tipo === 'admin') {
+                    const adminPanelLinkExists = navMenu.querySelector('a[href="admin.html"]');
+                    if (!adminPanelLinkExists) {
+                        const adminButtonLi = document.createElement('li');
+                        adminButtonLi.innerHTML = `<a href="admin.html">Admin Panel</a>`;
+                        
+                        const themeToggleListItem = document.getElementById('theme-toggle-li'); // Reference to theme toggle li
+                        const logoutListItem = navMenu.querySelector('li a.logout-button').parentElement;
+
+                        if (themeToggleListItem && themeToggleListItem.parentNode === navMenu) {
+                             navMenu.insertBefore(adminButtonLi, themeToggleListItem); // Insert before theme toggle
+                        } else if (logoutListItem) {
+                            navMenu.insertBefore(adminButtonLi, logoutListItem); // Fallback: insert before logout
+                        } else {
+                            navMenu.appendChild(adminButtonLi); // Ultimate fallback
+                        }
+                    }
+                    const adminWelcomeShownKey = `adminWelcomeShown_${currentUserId}`;
+                    if (localStorage.getItem(adminWelcomeShownKey) !== 'true') {
+                        showAdminWelcomePopup(data.name, currentUserId); 
+                    }
+                }
+            }
+        }
+        
+        function showAdminWelcomePopup(adminName, userIdForFlag) {
+            const popup = document.getElementById('admin-welcome-popup');
+            if (!popup) return; 
+            document.getElementById('admin-welcome-name').textContent = adminName;
+            popup.style.display = 'block';
+            document.getElementById('close-admin-welcome-popup').onclick = function() {
+                popup.style.display = 'none';
+                localStorage.setItem(`adminWelcomeShown_${userIdForFlag}`, 'true');
+            };
+        }
+
+        const helpButtonElement = document.getElementById('help-button');
+        const helpPopup = document.getElementById('help-popup');
+        const closePopup = document.getElementById('close-popup');
+        const tutorialsBtn = document.getElementById('tutorials-btn');
+        const tutorialsPopup = document.getElementById('tutorials-popup');
+        const closeTutorialsPopup = document.getElementById('close-tutorials-popup');
+
+        if (helpButtonElement) helpButtonElement.addEventListener('click', () => { if(helpPopup) helpPopup.style.display = 'block'; });
+        if (closePopup) closePopup.addEventListener('click', () => { if(helpPopup) helpPopup.style.display = 'none'; });
+        if (tutorialsBtn) tutorialsBtn.addEventListener('click', () => { if(tutorialsPopup) tutorialsPopup.style.display = 'block'; });
+        if (closeTutorialsPopup) closeTutorialsPopup.addEventListener('click', () => { if(tutorialsPopup) tutorialsPopup.style.display = 'none'; });
+
+        const logoutButton = document.querySelector('a.logout-button');
+        if(logoutButton) {
+            logoutButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                localStorage.removeItem('user_id');
+                localStorage.removeItem('username');
+                localStorage.removeItem('theme'); // Clear theme on logout
+                localStorage.removeItem('theme_explicitly_set'); // Clear explicit set flag
+                sessionStorage.clear();
+                window.location.href = 'my_future.html';
+            });
+        }
+        function destacarTexto(texto) {
+            if (typeof texto !== 'string') return '';
+            return texto
+                .replace(/Aviso 1/gi, '<span class="color-highlight">Aviso 1</span>')
+                .replace(/importante/gi, '<span class="blink-highlight">importante</span>')
+                .replace(/atenção/gi, '<span class="color-highlight">atenção</span>');
+        }
+        function showLoginModal() {
+            const mainEl = document.querySelector('main');
+            const headerEl = document.querySelector('header');
+            const helpBtnEl = document.getElementById('help-button');
+
+            if(mainEl) mainEl.classList.add('hidden');
+            if(headerEl) headerEl.classList.add('hidden');
+            if(helpBtnEl) helpBtnEl.classList.add('hidden');
+            
+            const loginModal = document.getElementById('login-modal');
+            if (!loginModal) return;
+
+            const okButton = document.getElementById('modal-ok-button');
+            const timerDisplay = document.getElementById('countdown-timer');
+            
+            loginModal.style.display = 'block';
+            if(okButton) okButton.disabled = false;
+            
+            let timeLeft = 120;
+            const timerInterval = setInterval(() => {
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                if(timerDisplay) timerDisplay.textContent = `Tempo restante: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                timeLeft--;
+                if (timeLeft < 0) {
+                    clearInterval(timerInterval);
+                    window.location.href = 'my_future.html';
+                }
+            }, 1000);
+            
+            if(okButton) okButton.onclick = function() {
+                clearInterval(timerInterval);
+                window.location.href = 'my_future.html';
+            };
+        }
+
+        async function loadBannersFromDatabase() {
+            try {
+                const now = new Date().toISOString();
+                const { data: banners, error } = await supabase.from('banner').select('*').eq('ativo', true).gte('data_fim', now).order('created_at', { ascending: false });
+                if (error) throw error;
+                if (banners && banners.length > 0) {
+                    banners.forEach(banner => {
+                        let bannerItem;
+                        const sectionClass = banner.tipo.toLowerCase() + 's'; 
+                        const section = document.querySelector(`.section.${sectionClass}`);
+                        if(!section) {
+                            console.warn(`Seção .${sectionClass} não encontrada para o banner.`);
+                            return; 
+                        }
+
+                        switch (banner.tipo.toLowerCase()) {
+                            case 'video': bannerItem = createVideoBanner(banner); break;
+                            case 'documento': bannerItem = createDocumentBanner(banner); break;
+                            case 'link': bannerItem = createLinkBanner(banner); break;
+                            default: console.warn(`Tipo de banner desconhecido: ${banner.tipo}`); return;
+                        }
+                        if (bannerItem) section.insertBefore(bannerItem, section.firstChild);
+                    });
+                }
+            } catch (error) { console.error('Erro ao carregar banners:', error); }
+        }
+
+        function createVideoBanner(banner) {
+            const item = document.createElement('div'); item.classList.add('video-item'); item.style.border = '2px solid var(--accent-color)'; item.style.position = 'relative';
+            const badge = document.createElement('div'); badge.style.cssText = 'position:absolute;top:10px;right:10px;background-color:var(--accent-color);color:white;padding:5px 10px;border-radius:5px;font-size:0.8em;'; badge.textContent = 'Destaque';
+            try {
+                const videoId = new URL(banner.link).searchParams.get('v'); if (!videoId) throw new Error('ID do vídeo não encontrado.');
+                const embedLink = `https://www.youtube.com/embed/${videoId}`; // Corrected embed link
+                item.innerHTML = `<iframe src="${embedLink}" allowfullscreen></iframe><h3>${banner.titulo}</h3><p>${banner.mensagem || ''}</p>`;
+                item.appendChild(badge); return item;
+            } catch (e) { console.error('URL do vídeo inválida para banner:', banner.link, e); return null; }
+        }
+        function createDocumentBanner(banner) { 
+            const item = document.createElement('div'); item.classList.add('file-item'); item.style.border = '2px solid var(--accent-color)'; item.style.position = 'relative';
+            const badge = document.createElement('div'); badge.style.cssText = 'position:absolute;top:10px;right:10px;background-color:var(--accent-color);color:white;padding:5px 10px;border-radius:5px;font-size:0.8em;'; badge.textContent = 'Destaque';
+            item.innerHTML = `<h3>${banner.titulo}</h3><p>${banner.mensagem || ''}</p><a href="${banner.link}" download>Baixar Arquivo</a>`;
+            item.appendChild(badge); return item;
+        }
+        function createLinkBanner(banner) { 
+            const item = document.createElement('div'); item.classList.add('link-item'); item.style.border = '2px solid var(--accent-color)'; item.style.position = 'relative';
+            const badge = document.createElement('div'); badge.style.cssText = 'position:absolute;top:10px;right:10px;background-color:var(--accent-color);color:white;padding:5px 10px;border-radius:5px;font-size:0.8em;'; badge.textContent = 'Destaque';
+            item.innerHTML = `<h3>${banner.titulo}</h3><p>${banner.mensagem || ''}</p><a href="${banner.link}" target="_blank">Acessar Link</a>`;
+            item.appendChild(badge); return item;
+        }
+
+        async function loadNoticesFromDatabase() {
+            try {
+                const { data: notices, error } = await supabase.from('avisos').select('*').order('data', { ascending: false });
+                if (error) throw error;
+                const container = document.querySelector('#notices'); container.innerHTML = '';
+                notices.forEach(notice => {
+                    const item = document.createElement('div'); item.classList.add('notice-item');
+                    item.innerHTML = `<h3>${destacarTexto(notice.titulo)}</h3><p>${destacarTexto(notice.descricao)}</p><p><small>Publicado em: ${new Date(notice.data).toLocaleDateString()}</small></p>`;
+                    container.appendChild(item);
+                });
+            } catch (error) { console.error('Erro ao carregar avisos:', error); }
+        }
+        async function loadVideosFromDatabase() {
+            try {
+                const { data: videos, error } = await supabase.from('videos').select('*').order('data_publicacao', { ascending: false });
+                if (error) throw error;
+                const container = document.querySelector('#videos'); container.innerHTML = '';
+                videos.forEach(video => {
+                    const item = document.createElement('div'); item.classList.add('video-item');
+                    try {
+                        const videoId = new URL(video.link).searchParams.get('v'); if (!videoId) throw new Error('ID do vídeo não encontrado.');
+                        const embedLink = `https://www.youtube.com/embed/${videoId}`; // Corrected embed link
+                        item.innerHTML = `<iframe src="${embedLink}" allowfullscreen></iframe><h3>${video.titulo}</h3><p><small>Publicado em: ${new Date(video.data_publicacao).toLocaleDateString()}</small></p>`;
+                        container.appendChild(item);
+                    } catch (e) { console.error("Erro ao processar link do vídeo:", video.link, e); }
+                });
+            } catch (error) { console.error('Erro ao carregar vídeos:', error); }
+        }
+        async function loadDownloadsFromDatabase() {
+            try {
+                const { data: documentos, error } = await supabase.from('documentos').select('*').order('data', { ascending: false });
+                if (error) throw error;
+                const container = document.querySelector('#downloads'); container.innerHTML = '';
+                documentos.forEach(doc => {
+                    const item = document.createElement('div'); item.classList.add('file-item');
+                    item.innerHTML = `<h3>${doc.nome}</h3><p><small>Publicado em: ${new Date(doc.data).toLocaleDateString()}</small></p><a href="${doc.diretorio}" download>Baixar Arquivo</a>`;
+                    container.appendChild(item);
+                });
+            } catch (error) { console.error('Erro ao carregar downloads:', error); }
+        }
+        async function loadThirdPartyLinksFromDatabase() {
+            try {
+                const { data: links, error } = await supabase.from('links_uteis').select('*').order('created_at', { ascending: false });
+                if (error) throw error;
+                const container = document.querySelector('#third-party-links'); container.innerHTML = '';
+                links.forEach(link => {
+                    const item = document.createElement('div'); item.classList.add('link-item');
+                    item.innerHTML = `<h3>${destacarTexto(link.titulo)}</h3><p>${destacarTexto(link.descricao)}</p><a href="${link.url}" target="_blank">Acessar Link</a>`;
+                    container.appendChild(item);
+                });
+            } catch (error) { console.error('Erro ao carregar links importantes:', error); }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            // Theme functionality is initialized earlier to prevent FOUC
+            checkUserLoggedIn(); 
+            showSection('cursos'); 
+            loadBannersFromDatabase(); // Se quiser banners nas novas seções
+
+            const currentYearSpan = document.getElementById('current-year');
+            if (currentYearSpan) currentYearSpan.textContent = new Date().getFullYear();
+        });
+
+    </script>
+    <footer style=" /* Styles are now in the main <style> block with variables */ ">
+        Developed by Romário Gadino © <span id="current-year"></span>
+    </footer>
+    
+    <script> // Script separado para Profile Popup
+        async function showProfilePopup() {
+            try {
+                const userId = localStorage.getItem('user_id');
+                if (!userId) { console.error('User ID não encontrado para popup de perfil'); return; }
+
+                const { data: user, error } = await supabase.from('users').select('name, password, tipo, perfil_image').eq('id', userId).single();
+                if (error) throw error;
+
+                document.getElementById('popup-name').value = user.name;
+                document.getElementById('popup-password').value = user.password;
+                document.getElementById('popup-tipo').textContent = user.tipo;
+                
+                const profileImageSrc = user.perfil_image || './perfil_image/avatar-padrao.webp';
+                document.getElementById('popup-profile-image').src = profileImageSrc;
+
+                document.getElementById('profile-popup').style.display = 'block';
+                
+                const uploadContainer = document.getElementById('upload-container');
+                if (uploadContainer && !document.getElementById('upload-image-btn')) { 
+                    addUploadButtonToProfilePopup();
+                }
+
+            } catch (error) {
+                console.error('Erro ao mostrar popup de perfil:', error);
+                alert('Não foi possível carregar as informações do perfil.');
+            }
+        }
+
+        const navProfileImage = document.getElementById('nav-profile-image');
+        if (navProfileImage) navProfileImage.addEventListener('click', showProfilePopup);
+        
+        const closeProfilePopupButton = document.getElementById('close-profile-popup');
+        if (closeProfilePopupButton) closeProfilePopupButton.addEventListener('click', function() {
+            document.getElementById('profile-popup').style.display = 'none';
+        });
+
+        window.addEventListener('click', function(event) {
+            const profilePopupElement = document.getElementById('profile-popup');
+            if (event.target === profilePopupElement) {
+                profilePopupElement.style.display = 'none';
+            }
+        });
+
+        function addUploadButtonToProfilePopup() {
+            const uploadContainer = document.getElementById('upload-container'); 
+            if (!uploadContainer) { console.error("Div 'upload-container' não encontrada."); return; }
+            uploadContainer.innerHTML = ''; 
+            
+            const uploadHtml = `
+                <input type="file" id="profile-image-input" accept="image/*" style="display: none;">
+                <button id="upload-image-btn" style="
+                    background-color: var(--primary-color); color: var(--button-text-color); border: none;
+                    padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size:0.9em;">
+                    Alterar Foto
+                </button>
+            `;
+            uploadContainer.innerHTML = uploadHtml;
+
+            const uploadBtn = document.getElementById('upload-image-btn');
+            const fileInput = document.getElementById('profile-image-input');
+            
+            if (uploadBtn) uploadBtn.addEventListener('click', () => { if(fileInput) fileInput.click(); });
+            if (fileInput) fileInput.addEventListener('change', handleImageUpload);
+        }
+
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const statusDiv = document.getElementById('upload-status');
+            if(statusDiv) { statusDiv.innerHTML = 'Enviando imagem...'; statusDiv.style.color = 'var(--primary-color)'; }
+
+            try {
+                const userId = localStorage.getItem('user_id');
+                if (!userId) throw new Error('Usuário não identificado para upload.');
+
+                const fileExt = file.name.split('.').pop();
+                const fileName = `user_${userId}_${Date.now()}.${fileExt}`;
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('perfil.image') 
+                    .upload(fileName, file, { cacheControl: '3600', upsert: true }); 
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage.from('perfil.image').getPublicUrl(fileName);
+                if (!publicUrl) throw new Error("Não foi possível obter a URL pública da imagem.");
+
+                const { error: updateError } = await supabase.from('users').update({ perfil_image: publicUrl }).eq('id', userId);
+                if (updateError) throw updateError;
+
+                document.getElementById('popup-profile-image').src = publicUrl;
+                document.getElementById('nav-profile-image').src = publicUrl; 
+
+                if(statusDiv) { statusDiv.innerHTML = 'Imagem atualizada!'; statusDiv.style.color = 'green'; }
+
+            } catch (error) {
+                console.error('Erro no upload da imagem:', error);
+                if(statusDiv) { statusDiv.innerHTML = `Erro: ${error.message || 'Falha no upload.'}`; statusDiv.style.color = 'red'; }
+            }
+        }
+        
+        const saveProfileButton = document.getElementById('save-profile-btn');
+        if (saveProfileButton) saveProfileButton.addEventListener('click', async () => {
+            const nameInput = document.getElementById('popup-name').value.trim();
+            const passwordInput = document.getElementById('popup-password').value.trim();
+            const status = document.getElementById('save-status');
+            
+            if (!nameInput || !passwordInput) {
+                if(status) { status.textContent = 'Nome e senha são obrigatórios.'; status.style.color = 'red'; }
+                return;
+            }
+            const userId = localStorage.getItem('user_id');
+            if (!userId) { if(status) { status.textContent = 'Usuário não identificado.'; status.style.color = 'red'; } return;}
+
+            if(status) { status.textContent = 'Salvando...'; status.style.color = 'var(--primary-color)'; }
+
+            const { error } = await supabase.from('users').update({ name: nameInput, password: passwordInput }).eq('id', userId);
+
+            if (error) {
+                console.error('Erro ao atualizar dados:', error);
+                if(status) { status.textContent = 'Erro ao salvar.'; status.style.color = 'red'; }
+            } else {
+                document.getElementById('username-display').textContent = nameInput; 
+                if(status) { status.textContent = 'Dados atualizados!'; status.style.color = 'green'; }
+            }
+        });
+
+        const togglePasswordCheckbox = document.getElementById('toggle-password');
+        if (togglePasswordCheckbox) togglePasswordCheckbox.addEventListener('change', function() {
+            const pwdField = document.getElementById('popup-password');
+            if(pwdField) pwdField.type = this.checked ? 'text' : 'password';
+        });
+        
+        const navProfileImageForAnimation = document.getElementById('nav-profile-image');
+        if (navProfileImageForAnimation) {
+           
+        }
+    </script>
+</body>
+</html>
