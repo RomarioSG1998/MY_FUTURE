@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-image: url('./imagens/fundologin.png'); /* Substitua 'background.jpg' pelo caminho da sua imagem */
+            background-image: url('./imagens/loginbackground.jpg'); /* Substitua 'background.jpg' pelo caminho da sua imagem */
             background-size: cover; /* Faz a imagem cobrir toda a tela */
             background-position: center; /* Centraliza a imagem */
             background-repeat: no-repeat; /* Evita repetição da imagem */
@@ -29,7 +29,7 @@
             width: 100%;
         }
         .login-container {
-            background: rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.25);
             padding: 15px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -37,13 +37,11 @@
             max-width: 300px;
             box-sizing: border-box;
             text-align: center;
-            margin: auto; /* Centraliza o contêiner por padrão */
-            margin-top: 130px; /* Adiciona um espaçamento superior */
+            margin: 0 auto; /* Centraliza horizontalmente */
         }
         @media (min-width: 1024px) {
             .login-container {
-                margin-left: auto; /* Empurra o contêiner para a direita */
-                margin-right: 200px; /* Adiciona um espaço à direita */
+                margin: 0 auto; /* Garante centralização em telas grandes também */
             }
         }
         .login-container img {
@@ -198,13 +196,8 @@
 </head>
 <body>
     <div class="main-wrapper">
-        <div class="logos-container">
-            <img src="./imagens/logo1.png" alt="Logo">
-            <img src="./imagens/logo2.png" alt="Logo">
-            <img src="./imagens/pibid.png" alt="Logo">
-        </div>
         <div class="login-container">
-            <img src="./imagens/pibid.png" alt="Logo do Portal Pibid">
+            <img src="./imagens/iconehacker.webp" alt="Logo do Portal Pibid">
             <form id="loginForm" action="#" method="POST">
                 <div class="form-group">
                     <label for="username">Nome</label>
@@ -220,7 +213,7 @@
                 <div id="mensagem" style="margin-top:10px; color:#333;"></div>
             </form>
             <div class="form-footer">
-                <p>Não tem uma conta? <a href="https://wa.me/5582981083015" target="_blank">Cadastre-se</a></p>
+                <!-- Texto de cadastro removido -->
             </div>
         </div>
     </div>
@@ -259,6 +252,7 @@
                 } else if (data) {
                     // Remove success message and just redirect
                     localStorage.setItem('user_id', data.id);
+                    localStorage.setItem('user_name', data.name);
                     window.location.href = 'index.html'; // Redirect immediately
                 } else {
                     mensagem.textContent = 'Credenciais inválidas. Tente novamente.';
