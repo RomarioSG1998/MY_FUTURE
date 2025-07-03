@@ -32,6 +32,88 @@
             font-size: 1.3em;
             font-weight: bold;
         }
+        body.edit-mode #edit-gear-btn {
+          background: #1976d2 !important;
+        }
+        body.edit-mode #edit-gear-btn svg path {
+          fill: #fff !important;
+        }
+        #conteudo-texto-main {
+          max-width: 700px;
+          margin: 90px auto 0 auto;
+          padding: 24px;
+          display: none;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+          position: relative;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        #conteudo-texto-main h2,
+        #conteudo-texto-main p {
+          max-width: 100%;
+          word-break: break-word;
+          overflow-wrap: break-word;
+          white-space: pre-line;
+        }
+        #conteudo-texto-main img {
+          max-width: 100%;
+          height: auto;
+          display: block;
+          margin: 16px 0;
+          border-radius: 8px;
+        }
+        @media (max-width: 800px) {
+          #conteudo-texto-main {
+            max-width: 98vw;
+            padding: 10px;
+          }
+        }
+        #conteudo-texto-main .registro {
+          display: block;
+          margin-bottom: 0.7em;
+          line-height: 1.6;
+        }
+        #conteudo-texto-main .registro-title {
+          color: #111;
+          font-size: 1.1em;
+          font-weight: bold;
+          display: inline-block;
+          margin-bottom: 0.1em;
+          margin-right: 0.5em;
+          vertical-align: middle;
+        }
+        #conteudo-texto-main .registro-text {
+          display: inline;
+          color: #222;
+          font-size: 1em;
+          vertical-align: middle;
+        }
+        #conteudo-texto-main .registro-img {
+          display: block;
+          max-width: 100%;
+          margin: 8px 0 8px 0;
+          border-radius: 8px;
+        }
+        #conteudo-texto-main .crud-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 0.95em;
+          color: #888;
+          padding: 2px 6px;
+          border-radius: 4px;
+          transition: background 0.2s;
+        }
+        #conteudo-texto-main .crud-btn.delete { color: #b00; }
+        #conteudo-texto-main .crud-btn:hover { background: #f0f0f0; }
+        #conteudo-texto-main .registro-toolbar {
+          display: flex;
+          justify-content: flex-end;
+          gap: 8px;
+          margin-bottom: 2px;
+        }
     </style>
 </head>
 <body>
@@ -41,11 +123,32 @@
             <img src="./imagens/iconehacker.webp" alt="Ícone Hacker" style="height:48px;width:auto;display:block;" />
         </button>
     </header>
+    <button id="edit-gear-btn" title="Modo edição" style="
+      position:fixed;
+      top:90px;
+      left:24px;
+      z-index:3001;
+      background:#fff;
+      border-radius:50%;
+      border:none;
+      box-shadow:0 2px 8px rgba(0,0,0,0.18);
+      width:56px;
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:box-shadow 0.2s;
+    ">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+        <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-2.9l1.77-1.02a.5.5 0 0 0 .18-.68l-1.68-2.92a.5.5 0 0 0-.61-.23l-2.08.83a7.03 7.03 0 0 0-1.6-.93l-.31-2.23A.5.5 0 0 0 14 4h-4a.5.5 0 0 0-.5.42l-.31 2.23c-.58.23-1.12.53-1.6.93l-2.08-.83a.5.5 0 0 0-.61.23l-1.68 2.92a.5.5 0 0 0 .18.68l1.77 1.02c-.05.32-.08.65-.08.98s.03.66.08.98l-1.77 1.02a.5.5 0 0 0-.18.68l1.68 2.92a.5.5 0 0 0 .61.23l2.08-.83c.48.4 1.02.7 1.6.93l.31 2.23A.5.5 0 0 0 10 20h4a.5.5 0 0 0 .5-.42l.31-2.23c.58-.23 1.12-.53 1.6-.93l2.08.83a.5.5 0 0 0 .61-.23l1.68-2.92a.5.5 0 0 0-.18-.68l-1.77-1.02c.05-.32.08-.65.08-.98s-.03-.66-.08-.98z" fill="#1976d2"/>
+      </svg>
+    </button>
     <script>
         const userName = localStorage.getItem('user_name');
         document.getElementById('header-user-name').textContent = userName ? userName : 'Usuário';
     </script>
-    <div id="conteudo-texto-main" style="max-width:700px;margin:90px auto 0 auto;padding:24px;display:none;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);"></div>
+    <div id="conteudo-texto-main" style="max-width:700px;margin:90px auto 0 auto;padding:24px;display:none;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);position:relative;"></div>
     <div id="disciplina-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;">
       <div style="position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;">
         <button id="close-modal" style="position:absolute;top:-40px;right:0;font-size:2em;background:none;border:none;cursor:pointer;z-index:10;">&times;</button>
@@ -53,6 +156,7 @@
         <div id="pizza" style="position:relative;width:380px;height:380px;border-radius:50%;background:transparent;box-shadow:0 8px 32px rgba(0,0,0,0.18);overflow:visible;"></div>
       </div>
     </div>
+    <div id="crud-modal-root"></div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
     const SUPABASE_URL = 'https://zzrylgsjksrjotgcwavt.supabase.co';
@@ -138,20 +242,9 @@
               document.getElementById('disciplina-modal').style.display = 'none';
 
               // Mostra conteúdo ou mensagem
-              const conteudoDiv = document.getElementById('conteudo-texto-main');
-              if (errorText || !textos || textos.length === 0) {
-                conteudoDiv.style.display = 'block';
-                conteudoDiv.innerHTML = '<div style="color:#b00;font-size:1.1em;text-align:center;">Essa disciplina ainda não tem conteúdo.</div>';
-              } else {
-                const t = textos[0];
-                conteudoDiv.style.display = 'block';
-                conteudoDiv.innerHTML = `
-                  <button onclick=\"this.parentNode.style.display='none'\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>
-                  <h2 style=\"margin-top:0\">${t.title}</h2>
-                  <p>${t.complete_text}</p>
-                  ${t.image ? `<img src=\"${t.image}\" alt=\"\" style=\"max-width:100%;margin-top:16px;border-radius:8px;\">` : ''}
-                `;
-              }
+              window.ultimoTextosExibidos = textos;
+              window.ultimoDisciplinaIdExibida = disciplinaId;
+              renderConteudoAtual(textos, disciplinaId);
             });
           });
         }, 100);
@@ -160,6 +253,118 @@
     // Fecha o modal
     document.getElementById('close-modal').onclick = function() {
         document.getElementById('disciplina-modal').style.display = 'none';
+    };
+
+    let editMode = false;
+    document.getElementById('edit-gear-btn').addEventListener('click', function() {
+      editMode = !editMode;
+      document.body.classList.toggle('edit-mode', editMode);
+      if (window.ultimoTextosExibidos && window.ultimoDisciplinaIdExibida) {
+        renderConteudoAtual(window.ultimoTextosExibidos, window.ultimoDisciplinaIdExibida);
+      }
+    });
+
+    function renderConteudoAtual(textos = [], disciplinaId = null) {
+      const conteudoDiv = document.getElementById('conteudo-texto-main');
+      if (!textos.length) {
+        conteudoDiv.style.display = 'block';
+        conteudoDiv.innerHTML = '<div style="color:#b00;font-size:1.1em;text-align:center;">Essa disciplina ainda não tem conteúdo.</div>';
+        return;
+      }
+      conteudoDiv.style.display = 'block';
+      conteudoDiv.innerHTML = `<button onclick=\"this.parentNode.style.display='none'\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>` +
+        textos.map((t, i) => `
+          <div class=\"registro\">
+            ${editMode ? `
+              <div class=\"registro-toolbar\">
+                <button onclick=\"editarTexto(${t.id})\" class=\"crud-btn\" title=\"Editar\">✏️</button>
+                <button onclick=\"excluirTexto(${t.id},${disciplinaId})\" class=\"crud-btn delete\" title=\"Excluir\">🗑️</button>
+              </div>
+            ` : ''}
+            ${t.title ? `${i > 0 ? '<br>' : ''}<span class=\"registro-title\">${t.title}</span>` : ''}
+            ${t.complete_text ? `<span class=\"registro-text\">${t.complete_text}</span>` : ''}
+            ${t.image ? `<img src=\"${t.image}\" alt=\"\" class=\"registro-img\">` : ''}
+          </div>
+        `).join('') +
+        (editMode ? `<button onclick=\"criarTexto(${disciplinaId})\" style=\"margin-left:8px;font-size:1em;vertical-align:middle;\">➕ Novo Texto</button>` : '');
+    }
+
+    window.criarTexto = function(disciplinaId) {
+      document.getElementById('crud-modal-root').innerHTML = `
+        <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;">
+          <form id="form-novo-texto" style="background:#fff;padding:24px 20px;border-radius:10px;max-width:400px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;">
+            <button type="button" onclick="document.getElementById('crud-modal-root').innerHTML=''" style="position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;">&times;</button>
+            <h3>Novo Texto</h3>
+            <input name="title" placeholder="Título" style="width:100%;margin-bottom:8px;" />
+            <textarea name="complete_text" placeholder="Texto completo" style="width:100%;margin-bottom:8px;"></textarea>
+            <input name="image" placeholder="URL da imagem (opcional)" style="width:100%;margin-bottom:8px;" />
+            <button type="submit">Salvar</button>
+          </form>
+        </div>
+      `;
+      document.getElementById('form-novo-texto').onsubmit = async function(e) {
+        e.preventDefault();
+        const { title, complete_text, image } = this;
+        await supabase.from('text').insert([{ 
+          title: title.value, 
+          complete_text: complete_text.value, 
+          image: image.value, 
+          id_disciplina: disciplinaId 
+        }]);
+        const { data: textos } = await supabase.from('text').select('*').eq('id_disciplina', disciplinaId);
+        window.ultimoTextosExibidos = textos;
+        renderConteudoAtual(textos, disciplinaId);
+        document.getElementById('crud-modal-root').innerHTML = '';
+      };
+    };
+    window.editarTexto = function(id) {
+      const t = window.ultimoTextosExibidos.find(x => x.id == id);
+      if (!t) return;
+      document.getElementById('crud-modal-root').innerHTML = `
+        <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;">
+          <form id="form-editar-texto" style="background:#fff;padding:24px 20px;border-radius:10px;max-width:400px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;">
+            <button type="button" onclick="document.getElementById('crud-modal-root').innerHTML=''" style="position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;">&times;</button>
+            <h3>Editar Texto</h3>
+            <input name="title" value="${t.title || ''}" style="width:100%;margin-bottom:8px;" />
+            <textarea name="complete_text" style="width:100%;margin-bottom:8px;">${t.complete_text || ''}</textarea>
+            <input name="image" value="${t.image || ''}" style="width:100%;margin-bottom:8px;" />
+            <button type="submit">Salvar</button>
+          </form>
+        </div>
+      `;
+      document.getElementById('form-editar-texto').onsubmit = async function(e) {
+        e.preventDefault();
+        const { title, complete_text, image } = this;
+        await supabase.from('text').update({ 
+          title: title.value, 
+          complete_text: complete_text.value, 
+          image: image.value 
+        }).eq('id', id);
+        const { data: textos } = await supabase.from('text').select('*').eq('id_disciplina', t.id_disciplina);
+        window.ultimoTextosExibidos = textos;
+        renderConteudoAtual(textos, t.id_disciplina);
+        document.getElementById('crud-modal-root').innerHTML = '';
+      };
+    };
+    window.excluirTexto = function(id, disciplinaId) {
+      document.getElementById('crud-modal-root').innerHTML = `
+        <div style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;">
+          <div style="background:#fff;padding:24px 20px;border-radius:10px;max-width:340px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;text-align:center;">
+            <button type="button" onclick="document.getElementById('crud-modal-root').innerHTML=''" style="position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;">&times;</button>
+            <h3>Excluir Texto</h3>
+            <p>Tem certeza que deseja excluir este texto?</p>
+            <button onclick="confirmarExclusaoTexto(${id},${disciplinaId})" style="margin-right:12px;">Sim</button>
+            <button onclick="document.getElementById('crud-modal-root').innerHTML=''">Não</button>
+          </div>
+        </div>
+      `;
+    };
+    window.confirmarExclusaoTexto = async function(id, disciplinaId) {
+      await supabase.from('text').delete().eq('id', id);
+      const { data: textos } = await supabase.from('text').select('*').eq('id_disciplina', disciplinaId);
+      window.ultimoTextosExibidos = textos;
+      renderConteudoAtual(textos, disciplinaId);
+      document.getElementById('crud-modal-root').innerHTML = '';
     };
     </script>
 </body>
