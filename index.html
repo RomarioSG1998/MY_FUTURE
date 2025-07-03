@@ -40,10 +40,12 @@
         }
         #conteudo-texto-main,
         #conteudo-texto-main.videos-mode {
-          margin-top: 100px;
+          padding-top: 90px;
           margin-left: auto;
           margin-right: auto;
-          max-width: 700px;
+          margin-top: 0;
+          max-width: 1200px;
+          width: 96vw;
           padding: 24px;
           display: none;
           background: #fff;
@@ -60,17 +62,29 @@
           overflow-wrap: break-word;
           white-space: pre-line;
         }
-        #conteudo-texto-main img {
+        #conteudo-texto-main img,
+        #conteudo-texto-main iframe {
           max-width: 100%;
+          width: 100%;
           height: auto;
           display: block;
           margin: 16px 0;
           border-radius: 8px;
         }
         @media (max-width: 800px) {
-          #conteudo-texto-main {
-            max-width: 98vw;
+          #conteudo-texto-main,
+          #conteudo-texto-main.videos-mode {
+            max-width: 99vw;
+            width: 99vw;
             padding: 10px;
+            font-size: 0.98em;
+          }
+          #conteudo-texto-main .registro-title,
+          #conteudo-texto-main .registro-text {
+            font-size: 0.98em;
+          }
+          #conteudo-texto-main iframe {
+            height: 220px !important;
           }
         }
         #conteudo-texto-main .registro {
@@ -80,7 +94,7 @@
         }
         #conteudo-texto-main .registro-title {
           color: #111;
-          font-size: 1.1em;
+          font-size: 1em;
           font-weight: bold;
           display: inline-block;
           margin-bottom: 0.1em;
@@ -177,6 +191,29 @@
           max-width: 1200px;
           width: 96vw;
         }
+        /* Wrapper responsivo para vídeos 16:9 */
+        .video-responsive {
+          position: relative;
+          width: 100%;
+          max-width: 900px;
+          margin: 32px auto 24px auto;
+          padding-bottom: 56.25%; /* 16:9 */
+          height: 0;
+        }
+        .video-responsive iframe {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%;
+          height: 100%;
+          border-radius: 8px;
+          border: none;
+          background: #000;
+        }
+        @media (max-width: 950px) {
+          .video-responsive {
+            max-width: 99vw;
+          }
+        }
     </style>
 </head>
 <body>
@@ -185,6 +222,7 @@
         <button id="hacker-btn" style="background:none;border:none;padding:0;cursor:pointer;position:absolute;left:50%;transform:translateX(-50%);">
             <img src="./imagens/iconehacker.webp" alt="Ícone Hacker" style="height:48px;width:auto;display:block;" />
         </button>
+        <button id="logout-btn" style="margin-right:32px;background:#fff;color:#1976d2;border:none;padding:8px 18px;border-radius:6px;font-size:1em;cursor:pointer;transition:background 0.2s;">Sair</button>
     </header>
     <button id="edit-gear-btn" title="Modo edição" style="
       position:fixed;
@@ -216,6 +254,11 @@
     <script>
         const userName = localStorage.getItem('user_name');
         document.getElementById('header-user-name').textContent = userName ? userName : 'Usuário';
+        document.getElementById('logout-btn').onclick = function() {
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('user_name');
+            window.location.href = 'my_future.html';
+        };
     </script>
     <div id="conteudo-texto-main" style="max-width:700px;margin:90px auto 0 auto;padding:24px;display:none;background:#fff;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.08);position:relative;"></div>
     <div id="disciplina-modal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:2000;align-items:center;justify-content:center;">
@@ -516,7 +559,7 @@
       // Se for YouTube, embeda, senão mostra link
       const ytMatch = link.match(/(?:youtu.be\/|youtube.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
       if (ytMatch) {
-        return `<div style=\"margin:12px 0;\"><iframe width=\"100%\" height=\"315\" src=\"https://www.youtube.com/embed/${ytMatch[1]}\" frameborder=\"0\" allowfullscreen style=\"border-radius:8px;\"></iframe></div>`;
+        return `<div class=\"video-responsive\"><iframe src=\"https://www.youtube.com/embed/${ytMatch[1]}\" allowfullscreen></iframe></div>`;
       }
       return `<a href=\"${link}\" target=\"_blank\" style=\"color:#1976d2;word-break:break-all;\">${link}</a>`;
     }
