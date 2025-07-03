@@ -38,9 +38,12 @@
         body.edit-mode #edit-gear-btn svg path {
           fill: #fff !important;
         }
-        #conteudo-texto-main {
+        #conteudo-texto-main,
+        #conteudo-texto-main.videos-mode {
+          margin-top: 100px;
+          margin-left: auto;
+          margin-right: auto;
           max-width: 700px;
-          margin: 90px auto 0 auto;
           padding: 24px;
           display: none;
           background: #fff;
@@ -114,6 +117,66 @@
           gap: 8px;
           margin-bottom: 2px;
         }
+        #extra-content-btn {
+          position: fixed;
+          top: 180px;
+          left: 24px;
+          z-index: 3002;
+          background: #fff;
+          border-radius: 50%;
+          border: none;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+          width: 48px;
+          height: 48px;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: box-shadow 0.2s;
+        }
+        #extra-content-btn svg {
+          width: 28px;
+          height: 28px;
+        }
+        #extra-content-menu {
+          position: fixed;
+          top: 235px;
+          left: 24px;
+          z-index: 3003;
+          background: #fff;
+          border-radius: 10px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+          display: none;
+          flex-direction: column;
+          min-width: 120px;
+          padding: 6px 0;
+          animation: fadeInMenu 0.2s;
+        }
+        #extra-content-menu button {
+          background: none;
+          border: none;
+          width: 100%;
+          text-align: left;
+          padding: 8px 18px;
+          font-size: 1.05em;
+          cursor: pointer;
+          transition: background 0.2s;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        #extra-content-menu button:hover {
+          background: #f0f4f8;
+        }
+        @keyframes fadeInMenu {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        #conteudo-texto-main.videos-mode {
+          padding-top: 32px;
+          max-width: 1200px;
+          width: 96vw;
+        }
     </style>
 </head>
 <body>
@@ -144,6 +207,12 @@
         <path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7zm7.43-2.9l1.77-1.02a.5.5 0 0 0 .18-.68l-1.68-2.92a.5.5 0 0 0-.61-.23l-2.08.83a7.03 7.03 0 0 0-1.6-.93l-.31-2.23A.5.5 0 0 0 14 4h-4a.5.5 0 0 0-.5.42l-.31 2.23c-.58.23-1.12.53-1.6.93l-2.08-.83a.5.5 0 0 0-.61.23l-1.68 2.92a.5.5 0 0 0 .18.68l1.77 1.02c-.05.32-.08.65-.08.98s.03.66.08.98l-1.77 1.02a.5.5 0 0 0-.18.68l1.68 2.92a.5.5 0 0 0 .61.23l2.08-.83c.48.4 1.02.7 1.6.93l.31 2.23A.5.5 0 0 0 10 20h4a.5.5 0 0 0 .5-.42l.31-2.23c.58-.23 1.12-.53 1.6-.93l2.08.83a.5.5 0 0 0 .61-.23l1.68-2.92a.5.5 0 0 0-.18-.68l-1.77-1.02c.05-.32.08-.65.08-.98s-.03-.66-.08-.98z" fill="#1976d2"/>
       </svg>
     </button>
+    <button id="extra-content-btn" title="Conteúdo extra">
+      <svg viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke="#1976d2" stroke-width="2"/>
+        <path d="M8 12h8M12 8v8" stroke="#1976d2" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
     <script>
         const userName = localStorage.getItem('user_name');
         document.getElementById('header-user-name').textContent = userName ? userName : 'Usuário';
@@ -157,6 +226,11 @@
       </div>
     </div>
     <div id="crud-modal-root"></div>
+    <div id="extra-content-menu">
+      <button id="menu-text-btn">📝 Texto</button>
+      <button id="menu-video-btn">🎬 Vídeo</button>
+      <button id="menu-practice-btn">🧪 Prática</button>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script>
     const SUPABASE_URL = 'https://zzrylgsjksrjotgcwavt.supabase.co';
@@ -259,8 +333,12 @@
     document.getElementById('edit-gear-btn').addEventListener('click', function() {
       editMode = !editMode;
       document.body.classList.toggle('edit-mode', editMode);
-      if (window.ultimoTextosExibidos && window.ultimoDisciplinaIdExibida) {
+      if (window.abaAtiva === 'text' && window.ultimoTextosExibidos && window.ultimoDisciplinaIdExibida) {
         renderConteudoAtual(window.ultimoTextosExibidos, window.ultimoDisciplinaIdExibida);
+      } else if (window.abaAtiva === 'video' && window.ultimoDisciplinaIdExibida) {
+        document.getElementById('menu-video-btn').onclick();
+      } else if (window.abaAtiva === 'practice' && window.ultimoDisciplinaIdExibida) {
+        document.getElementById('menu-practice-btn').onclick();
       }
     });
 
@@ -268,7 +346,16 @@
       const conteudoDiv = document.getElementById('conteudo-texto-main');
       if (!textos.length) {
         conteudoDiv.style.display = 'block';
-        conteudoDiv.innerHTML = '<div style="color:#b00;font-size:1.1em;text-align:center;">Essa disciplina ainda não tem conteúdo.</div>';
+        conteudoDiv.innerHTML = `
+          <div style="color:#b00;font-size:1.1em;text-align:center;margin-bottom:16px;">
+            Essa disciplina ainda não tem conteúdo.
+          </div>
+          <div style="text-align:center;">
+            <button onclick="criarTexto(${disciplinaId})" style="font-size:1.1em;padding:8px 18px;border-radius:8px;background:#1976d2;color:#fff;border:none;cursor:pointer;">
+              ➕ Adicionar Texto
+            </button>
+          </div>
+        `;
         return;
       }
       conteudoDiv.style.display = 'block';
@@ -287,6 +374,8 @@
           </div>
         `).join('') +
         (editMode ? `<button onclick=\"criarTexto(${disciplinaId})\" style=\"margin-left:8px;font-size:1em;vertical-align:middle;\">➕ Novo Texto</button>` : '');
+      conteudoDiv.classList.remove('videos-mode');
+      document.getElementById('extra-content-btn').style.display = 'flex';
     }
 
     window.criarTexto = function(disciplinaId) {
@@ -365,6 +454,258 @@
       window.ultimoTextosExibidos = textos;
       renderConteudoAtual(textos, disciplinaId);
       document.getElementById('crud-modal-root').innerHTML = '';
+    };
+    document.getElementById('extra-content-btn').onclick = function() {
+      const menu = document.getElementById('extra-content-menu');
+      menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+    };
+    document.addEventListener('click', function(e) {
+      const menu = document.getElementById('extra-content-menu');
+      const btn = document.getElementById('extra-content-btn');
+      if (!menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+        menu.style.display = 'none';
+      }
+    });
+    document.getElementById('menu-text-btn').onclick = function() {
+      window.abaAtiva = 'text';
+      const disciplinaId = window.ultimoDisciplinaIdExibida;
+      if (!disciplinaId) return;
+      supabase.from('text').select('*').eq('id_disciplina', disciplinaId).then(({ data: textos }) => {
+        window.ultimoTextosExibidos = textos;
+        renderConteudoAtual(textos, disciplinaId);
+        document.getElementById('extra-content-menu').style.display = 'none';
+      });
+    };
+    document.getElementById('menu-video-btn').onclick = async function() {
+      window.abaAtiva = 'video';
+      const disciplinaId = window.ultimoDisciplinaIdExibida;
+      if (!disciplinaId) return;
+      const conteudoDiv = document.getElementById('conteudo-texto-main');
+      conteudoDiv.style.display = 'block';
+      conteudoDiv.innerHTML = '<div style="text-align:center;margin:40px 0;">Carregando vídeos...</div>';
+      conteudoDiv.classList.add('videos-mode');
+      document.getElementById('extra-content-menu').style.display = 'none';
+      // Busca vídeos
+      const { data: videos, error } = await supabase.from('video').select('*').eq('id_disciplina', disciplinaId);
+      if (error || !videos || videos.length === 0) {
+        conteudoDiv.innerHTML = `
+          <div style=\"color:#b00;font-size:1.1em;text-align:center;margin-bottom:16px;\">
+            Essa disciplina ainda não tem vídeos.
+          </div>
+          <div style=\"text-align:center;\">
+            <button onclick=\"criarVideo(${disciplinaId})\" style=\"font-size:1.1em;padding:8px 18px;border-radius:8px;background:#1976d2;color:#fff;border:none;cursor:pointer;\">➕ Adicionar Vídeo</button>
+          </div>
+        `;
+        return;
+      }
+      conteudoDiv.innerHTML = videos.map(v => `
+        <div class=\"registro\">
+          ${editMode ? `
+            <div class=\"registro-toolbar\">
+              <button onclick=\"editarVideo(${v.id})\" class=\"crud-btn\" title=\"Editar\">✏️</button>
+              <button onclick=\"excluirVideo(${v.id},${disciplinaId})\" class=\"crud-btn delete\" title=\"Excluir\">🗑️</button>
+            </div>
+          ` : ''}
+          ${v.title ? `<span class=\"registro-title\">${v.title}</span>` : ''}
+          ${v.video_link ? renderVideoEmbed(v.video_link) : ''}
+        </div>
+      `).join('') +
+      (editMode ? `<button onclick=\"criarVideo(${disciplinaId})\" style=\"margin-left:8px;font-size:1em;vertical-align:middle;\">➕ Adicionar Vídeo</button>` : '');
+    };
+    function renderVideoEmbed(link) {
+      // Se for YouTube, embeda, senão mostra link
+      const ytMatch = link.match(/(?:youtu.be\/|youtube.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+      if (ytMatch) {
+        return `<div style=\"margin:12px 0;\"><iframe width=\"100%\" height=\"315\" src=\"https://www.youtube.com/embed/${ytMatch[1]}\" frameborder=\"0\" allowfullscreen style=\"border-radius:8px;\"></iframe></div>`;
+      }
+      return `<a href=\"${link}\" target=\"_blank\" style=\"color:#1976d2;word-break:break-all;\">${link}</a>`;
+    }
+    window.criarVideo = function(disciplinaId) {
+      document.getElementById('crud-modal-root').innerHTML = `
+        <div style=\"position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;\">
+          <form id=\"form-novo-video\" style=\"background:#fff;padding:24px 20px;border-radius:10px;max-width:400px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;\">
+            <button type=\"button\" onclick=\"document.getElementById('crud-modal-root').innerHTML=''\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>
+            <h3>Novo Vídeo</h3>
+            <input name=\"title\" placeholder=\"Título\" style=\"width:100%;margin-bottom:8px;\" />
+            <input name=\"video_link\" placeholder=\"Link do vídeo\" style=\"width:100%;margin-bottom:8px;\" />
+            <button type=\"submit\">Salvar</button>
+          </form>
+        </div>
+      `;
+      document.getElementById('form-novo-video').onsubmit = async function(e) {
+        e.preventDefault();
+        const { title, video_link } = this;
+        await supabase.from('video').insert([{ 
+          title: title.value, 
+          video_link: video_link.value, 
+          id_disciplina: disciplinaId 
+        }]);
+        document.getElementById('crud-modal-root').innerHTML = '';
+        document.getElementById('menu-video-btn').onclick(); // Recarrega vídeos
+      };
+    };
+    window.editarVideo = function(id) {
+      supabase.from('video').select('*').eq('id', id).then(({ data }) => {
+        const v = data && data[0];
+        if (!v) return;
+        document.getElementById('crud-modal-root').innerHTML = `
+          <div style=\"position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;\">
+            <form id=\"form-editar-video\" style=\"background:#fff;padding:24px 20px;border-radius:10px;max-width:400px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;\">
+              <button type=\"button\" onclick=\"document.getElementById('crud-modal-root').innerHTML=''\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>
+              <h3>Editar Vídeo</h3>
+              <input name=\"title\" value=\"${v.title || ''}\" style=\"width:100%;margin-bottom:8px;\" />
+              <input name=\"video_link\" value=\"${v.video_link || ''}\" style=\"width:100%;margin-bottom:8px;\" />
+              <button type=\"submit\">Salvar</button>
+            </form>
+          </div>
+        `;
+        document.getElementById('form-editar-video').onsubmit = async function(e) {
+          e.preventDefault();
+          const { title, video_link } = this;
+          await supabase.from('video').update({
+            title: title.value,
+            video_link: video_link.value
+          }).eq('id', id);
+          document.getElementById('crud-modal-root').innerHTML = '';
+          document.getElementById('menu-video-btn').onclick(); // Recarrega vídeos
+        };
+      });
+    };
+    window.excluirVideo = function(id, disciplinaId) {
+      document.getElementById('crud-modal-root').innerHTML = `
+        <div style=\"position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;\">
+          <div style=\"background:#fff;padding:24px 20px;border-radius:10px;max-width:340px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;text-align:center;\">
+            <button type=\"button\" onclick=\"document.getElementById('crud-modal-root').innerHTML=''\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>
+            <h3>Excluir Vídeo</h3>
+            <p>Tem certeza que deseja excluir este vídeo?</p>
+            <button onclick=\"confirmarExclusaoVideo(${id},${disciplinaId})\" style=\"margin-right:12px;\">Sim</button>
+            <button onclick=\"document.getElementById('crud-modal-root').innerHTML=''\">Não</button>
+          </div>
+        </div>
+      `;
+    };
+    window.confirmarExclusaoVideo = async function(id, disciplinaId) {
+      await supabase.from('video').delete().eq('id', id);
+      document.getElementById('crud-modal-root').innerHTML = '';
+      document.getElementById('menu-video-btn').onclick(); // Recarrega vídeos
+    };
+    document.getElementById('menu-practice-btn').onclick = async function() {
+      window.abaAtiva = 'practice';
+      const disciplinaId = window.ultimoDisciplinaIdExibida;
+      if (!disciplinaId) return;
+      const conteudoDiv = document.getElementById('conteudo-texto-main');
+      conteudoDiv.style.display = 'block';
+      conteudoDiv.classList.remove('videos-mode');
+      conteudoDiv.innerHTML = '<div style="text-align:center;margin:40px 0;">Carregando práticas...</div>';
+      document.getElementById('extra-content-menu').style.display = 'none';
+      // Busca práticas
+      const { data: practices, error } = await supabase.from('practice').select('*').eq('id_disciplina', disciplinaId);
+      if (error || !practices || practices.length === 0) {
+        conteudoDiv.innerHTML = `
+          <div style=\"color:#b00;font-size:1.1em;text-align:center;margin-bottom:16px;\">
+            Essa disciplina ainda não tem práticas.
+          </div>
+          <div style=\"text-align:center;\">
+            <button onclick=\"criarPractice(${disciplinaId})\" style=\"font-size:1.1em;padding:8px 18px;border-radius:8px;background:#1976d2;color:#fff;border:none;cursor:pointer;\">➕ Adicionar Prática</button>
+          </div>
+        `;
+        return;
+      }
+      conteudoDiv.innerHTML = practices.map(p => `
+        <div class=\"registro\">
+          ${editMode ? `
+            <div class=\"registro-toolbar\">
+              <button onclick=\"editarPractice(${p.id})\" class=\"crud-btn\" title=\"Editar\">✏️</button>
+              <button onclick=\"excluirPractice(${p.id},${disciplinaId})\" class=\"crud-btn delete\" title=\"Excluir\">🗑️</button>
+            </div>
+          ` : ''}
+          ${p.tipo ? `<span class=\"registro-title\">${p.tipo}</span>` : ''}
+          ${p.texto ? `<span class=\"registro-text\">${p.texto}</span>` : ''}
+          ${p.link ? `<a href=\"${p.link}\" target=\"_blank\" style=\"color:#1976d2;word-break:break-all;display:block;margin-top:6px;\">🔗 Link</a>` : ''}
+        </div>
+      `).join('') +
+      (editMode ? `<button onclick=\"criarPractice(${disciplinaId})\" style=\"margin-left:8px;font-size:1em;vertical-align:middle;\">➕ Adicionar Prática</button>` : '');
+    };
+    window.criarPractice = function(disciplinaId) {
+      document.getElementById('crud-modal-root').innerHTML = `
+        <div style=\"position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;\">
+          <form id=\"form-novo-practice\" style=\"background:#fff;padding:24px 20px;border-radius:10px;max-width:400px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;\">
+            <button type=\"button\" onclick=\"document.getElementById('crud-modal-root').innerHTML=''\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>
+            <h3>Nova Prática</h3>
+            <select name=\"tipo\" style=\"width:100%;margin-bottom:8px;\">
+              <option value=\"texto\">Texto</option>
+              <option value=\"imagem\">Imagem</option>
+              <option value=\"video\">Vídeo</option>
+            </select>
+            <textarea name=\"texto\" placeholder=\"Descrição\" style=\"width:100%;margin-bottom:8px;\"></textarea>
+            <input name=\"link\" placeholder=\"Link (opcional)\" style=\"width:100%;margin-bottom:8px;\" />
+            <button type=\"submit\">Salvar</button>
+          </form>
+        </div>
+      `;
+      document.getElementById('form-novo-practice').onsubmit = async function(e) {
+        e.preventDefault();
+        const { tipo, texto, link } = this;
+        await supabase.from('practice').insert([{ 
+          tipo: tipo.value, 
+          texto: texto.value, 
+          link: link.value, 
+          id_disciplina: disciplinaId 
+        }]);
+        document.getElementById('crud-modal-root').innerHTML = '';
+        document.getElementById('menu-practice-btn').onclick(); // Recarrega práticas
+      };
+    };
+    window.editarPractice = function(id) {
+      supabase.from('practice').select('*').eq('id', id).then(({ data }) => {
+        const p = data && data[0];
+        if (!p) return;
+        document.getElementById('crud-modal-root').innerHTML = `
+          <div style=\"position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;\">
+            <form id=\"form-editar-practice\" style=\"background:#fff;padding:24px 20px;border-radius:10px;max-width:400px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;\">
+              <button type=\"button\" onclick=\"document.getElementById('crud-modal-root').innerHTML=''\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>
+              <h3>Editar Prática</h3>
+              <select name=\"tipo\" style=\"width:100%;margin-bottom:8px;\">
+                <option value=\"texto\" ${p.tipo === 'texto' ? 'selected' : ''}>Texto</option>
+                <option value=\"imagem\" ${p.tipo === 'imagem' ? 'selected' : ''}>Imagem</option>
+                <option value=\"video\" ${p.tipo === 'video' ? 'selected' : ''}>Vídeo</option>
+              </select>
+              <textarea name=\"texto\" style=\"width:100%;margin-bottom:8px;\">${p.texto || ''}</textarea>
+              <input name=\"link\" value=\"${p.link || ''}\" style=\"width:100%;margin-bottom:8px;\" />
+              <button type=\"submit\">Salvar</button>
+            </form>
+          </div>
+        `;
+        document.getElementById('form-editar-practice').onsubmit = async function(e) {
+          e.preventDefault();
+          const { tipo, texto, link } = this;
+          await supabase.from('practice').update({
+            tipo: tipo.value,
+            texto: texto.value,
+            link: link.value
+          }).eq('id', id);
+          document.getElementById('crud-modal-root').innerHTML = '';
+          document.getElementById('menu-practice-btn').onclick(); // Recarrega práticas
+        };
+      });
+    };
+    window.excluirPractice = function(id, disciplinaId) {
+      document.getElementById('crud-modal-root').innerHTML = `
+        <div style=\"position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.5);z-index:4000;display:flex;align-items:center;justify-content:center;\">
+          <div style=\"background:#fff;padding:24px 20px;border-radius:10px;max-width:340px;width:90vw;box-shadow:0 2px 12px rgba(0,0,0,0.12);position:relative;text-align:center;\">
+            <button type=\"button\" onclick=\"document.getElementById('crud-modal-root').innerHTML=''\" style=\"position:absolute;top:8px;right:12px;font-size:1.3em;background:none;border:none;cursor:pointer;\">&times;</button>
+            <h3>Excluir Prática</h3>
+            <p>Tem certeza que deseja excluir esta prática?</p>
+            <button onclick=\"confirmarExclusaoPractice(${id},${disciplinaId})\" style=\"margin-right:12px;\">Sim</button>
+            <button onclick=\"document.getElementById('crud-modal-root').innerHTML=''\">Não</button>
+          </div>
+        </div>
+      `;
+    };
+    window.confirmarExclusaoPractice = async function(id, disciplinaId) {
+      await supabase.from('practice').delete().eq('id', id);
+      document.getElementById('crud-modal-root').innerHTML = '';
+      document.getElementById('menu-practice-btn').onclick(); // Recarrega práticas
     };
     </script>
 </body>
