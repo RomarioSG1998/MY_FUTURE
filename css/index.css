@@ -300,11 +300,15 @@ body.edit-mode #edit-gear-btn svg path {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     border-radius: var(--border-radius);
+    min-height: 400px;
+    text-align: center;
 }
 #disciplina-modal h2 {
-    color: var(--white);
+    color: var(--primary-color);
     margin-bottom: 16px;
+    font-size: 1.5em;
 }
 .close-btn {
     position: absolute;
@@ -317,6 +321,13 @@ body.edit-mode #edit-gear-btn svg path {
     cursor: pointer;
     line-height: 1;
 }
+
+#disciplina-modal .close-btn {
+    color: var(--primary-color);
+    top: 8px;
+    right: 12px;
+    font-size: 1.5em;
+}
 .crud-modal .close-btn {
     top: 8px;
     right: 12px;
@@ -327,10 +338,21 @@ body.edit-mode #edit-gear-btn svg path {
 /* Modal de Pizza */
 #pizza-container {
     position: relative;
-    width: 380px;
-    height: 380px;
-    border-radius: 50%;
-    overflow: visible;
+    width: 100%;
+    max-width: 380px;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+}
+
+#pizza-container svg {
+    width: 100%;
+    height: auto;
+    max-width: 380px;
+    max-height: 380px;
 }
 #pizza-container svg path {
     cursor: pointer;
@@ -401,17 +423,70 @@ body.edit-mode #edit-gear-btn svg path {
     background: #000;
 }
 
-/* Media Queries para Responsividade */
-@media (max-width: 800px) {
-    #content-view {
-        width: 99vw;
-        padding: 10px;
-    }
-}
-
+/* Tabela de Disciplinas */
 #dashboard-disciplinas table {
     width: 100%;
     min-width: 600px;
+    border-collapse: collapse;
+}
+
+#dashboard-disciplinas table th,
+#dashboard-disciplinas table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+#dashboard-disciplinas table th {
+    background-color: var(--light-bg);
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Tabela responsiva para mobile */
+@media (max-width: 767px) {
+    #dashboard-disciplinas table {
+        min-width: auto;
+        font-size: 0.9em;
+    }
+    
+    #dashboard-disciplinas table th,
+    #dashboard-disciplinas table td {
+        padding: 8px 4px;
+    }
+    
+    /* Ocultar colunas menos importantes em mobile */
+    #dashboard-disciplinas table th:nth-child(1),
+    #dashboard-disciplinas table td:nth-child(1) {
+        display: none; /* Ocultar coluna ID */
+    }
+    
+    #dashboard-disciplinas table th:nth-child(3),
+    #dashboard-disciplinas table td:nth-child(3) {
+        display: none; /* Ocultar Data Início em mobile */
+    }
+    
+    #dashboard-disciplinas table th:nth-child(5),
+    #dashboard-disciplinas table td:nth-child(5) {
+        display: none; /* Ocultar Data Fim em mobile */
+    }
+}
+
+@media (max-width: 480px) {
+    #dashboard-disciplinas table {
+        font-size: 0.8em;
+    }
+    
+    #dashboard-disciplinas table th,
+    #dashboard-disciplinas table td {
+        padding: 6px 2px;
+    }
+    
+    /* Em telas muito pequenas, mostrar apenas nome e situação */
+    #dashboard-disciplinas table th:nth-child(4),
+    #dashboard-disciplinas table td:nth-child(4) {
+        display: none; /* Ocultar Situação também */
+    }
 }
 
 .edit-dashboard-disciplina-btn {
@@ -436,6 +511,87 @@ body.edit-mode #edit-gear-btn svg path {
     justify-content: center;
 }
 
+/* Tabela no modal de disciplinas */
+.crud-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+
+.crud-table th,
+.crud-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+.crud-table th {
+    background-color: var(--light-bg);
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+.crud-table button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1em;
+    padding: 4px;
+    margin: 0 2px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.crud-table button:hover {
+    background: var(--light-bg);
+}
+
+/* Responsividade da tabela no modal */
+@media (max-width: 767px) {
+    .crud-table {
+        font-size: 0.8em;
+    }
+    
+    .crud-table th,
+    .crud-table td {
+        padding: 6px 4px;
+    }
+    
+    /* Ocultar colunas menos importantes */
+    .crud-table th:nth-child(1),
+    .crud-table td:nth-child(1) {
+        display: none; /* ID */
+    }
+    
+    .crud-table th:nth-child(3),
+    .crud-table td:nth-child(3) {
+        display: none; /* Data Início */
+    }
+    
+    .crud-table th:nth-child(5),
+    .crud-table td:nth-child(5) {
+        display: none; /* Data Fim */
+    }
+}
+
+@media (max-width: 480px) {
+    .crud-table {
+        font-size: 0.75em;
+    }
+    
+    .crud-table th,
+    .crud-table td {
+        padding: 4px 2px;
+    }
+    
+    /* Em telas muito pequenas, mostrar apenas nome e ações */
+    .crud-table th:nth-child(4),
+    .crud-table td:nth-child(4) {
+        display: none; /* Situação */
+    }
+}
+
 .progress-bar-bg {
     width: 100%;
     height: 10px;
@@ -454,4 +610,520 @@ body.edit-mode #edit-gear-btn svg path {
     font-size: 0.95em;
     color: #555;
     text-align: right;
+}
+
+/* ===== MEDIA QUERIES PARA RESPONSIVIDADE ===== */
+
+/* Tablets (768px - 1024px) */
+@media (max-width: 1024px) {
+    .main-header {
+        padding: 12px 20px;
+        font-size: 1.1em;
+    }
+    
+    .main-header #hacker-btn img {
+        height: 40px;
+    }
+    
+    #dashboard, #content-view {
+        width: 95vw;
+        padding: 20px;
+    }
+    
+    #pizza-container {
+        max-width: 320px;
+    }
+    
+    #pizza-container svg {
+        max-width: 320px;
+        max-height: 320px;
+    }
+    
+    .fab {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .fab svg {
+        width: 28px;
+        height: 28px;
+    }
+}
+
+/* Tablets pequenos e celulares grandes (481px - 767px) */
+@media (max-width: 767px) {
+    .main-header {
+        padding: 10px 16px;
+        font-size: 1em;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    
+    .main-header #hacker-btn {
+        position: relative;
+        left: auto;
+        transform: none;
+        order: 2;
+    }
+    
+    .main-header #hacker-btn img {
+        height: 36px;
+    }
+    
+    .main-header #logout-btn {
+        padding: 6px 14px;
+        font-size: 0.85em;
+        order: 3;
+    }
+    
+    main {
+        padding-top: 80px;
+        padding-bottom: 120px; /* Espaço para os FABs */
+    }
+    
+    #dashboard, #content-view {
+        width: 98vw;
+        padding: 16px;
+        margin: 0 8px;
+    }
+    
+    #dashboard h2 {
+        font-size: 1.4em;
+        margin-bottom: 20px;
+    }
+    
+    .card-disciplina {
+        min-width: 100%;
+        flex: 1 1 100%;
+        padding: 16px 18px;
+    }
+    
+    .card-disciplina-title {
+        font-size: 1.1em;
+    }
+    
+    .card-disciplina-date, .card-disciplina-situation {
+        font-size: 0.9em;
+    }
+    
+    .registro-title {
+        font-size: 1.1em;
+    }
+    
+    .registro-text {
+        font-size: 0.95em;
+    }
+    
+    .fab {
+        width: 48px;
+        height: 48px;
+        bottom: 16px;
+        right: 16px;
+    }
+    
+    .fab svg {
+        width: 24px;
+        height: 24px;
+    }
+    
+    #edit-gear-btn { bottom: 16px; right: 16px; }
+    #extra-content-btn { bottom: 76px; right: 16px; }
+    #add-disciplina-btn { bottom: 136px; right: 16px; }
+    
+    #extra-content-menu {
+        bottom: 140px;
+        right: 16px;
+        min-width: 140px;
+    }
+    
+    #extra-content-menu button {
+        padding: 8px 14px;
+        font-size: 1em;
+    }
+    
+    .modal-content {
+        width: 95vw;
+        padding: 24px 16px;
+        margin: 16px;
+    }
+    
+    #disciplina-modal .modal-content {
+        min-height: 350px;
+    }
+    
+    #pizza-container {
+        max-width: 280px;
+    }
+    
+    #pizza-container svg {
+        max-width: 280px;
+        max-height: 280px;
+    }
+    
+    .crud-modal input, .crud-modal textarea, .crud-modal select {
+        padding: 8px;
+        font-size: 16px; /* Evita zoom no iOS */
+    }
+    
+    .crud-modal button[type="submit"] {
+        padding: 10px;
+        font-size: 1em;
+    }
+    
+    /* Tabela responsiva */
+    #dashboard-disciplinas table {
+        min-width: auto;
+        font-size: 0.9em;
+    }
+    
+    #dashboard-disciplinas table th,
+    #dashboard-disciplinas table td {
+        padding: 8px 4px;
+    }
+}
+
+/* Celulares pequenos (320px - 480px) */
+@media (max-width: 480px) {
+    .main-header {
+        padding: 8px 12px;
+        font-size: 0.9em;
+    }
+    
+    .main-header #hacker-btn img {
+        height: 32px;
+    }
+    
+    .main-header #logout-btn {
+        padding: 5px 12px;
+        font-size: 0.8em;
+    }
+    
+    main {
+        padding-top: 70px;
+        padding-bottom: 100px;
+    }
+    
+    #dashboard, #content-view {
+        width: 100vw;
+        padding: 12px;
+        margin: 0;
+        border-radius: 0;
+    }
+    
+    #dashboard h2 {
+        font-size: 1.3em;
+        margin-bottom: 16px;
+    }
+    
+    .card-disciplina {
+        padding: 14px 16px;
+        margin-bottom: 12px;
+    }
+    
+    .card-disciplina-title {
+        font-size: 1em;
+    }
+    
+    .card-disciplina-date, .card-disciplina-situation {
+        font-size: 0.85em;
+    }
+    
+    .registro {
+        margin-bottom: 1.2em;
+        padding-bottom: 0.8em;
+    }
+    
+    .registro-title {
+        font-size: 1em;
+    }
+    
+    .registro-text {
+        font-size: 0.9em;
+    }
+    
+    .fab {
+        width: 44px;
+        height: 44px;
+        bottom: 12px;
+        right: 12px;
+    }
+    
+    .fab svg {
+        width: 22px;
+        height: 22px;
+    }
+    
+    #edit-gear-btn { bottom: 12px; right: 12px; }
+    #extra-content-btn { bottom: 68px; right: 12px; }
+    #add-disciplina-btn { bottom: 124px; right: 12px; }
+    
+    #extra-content-menu {
+        bottom: 128px;
+        right: 12px;
+        min-width: 130px;
+    }
+    
+    #extra-content-menu button {
+        padding: 6px 12px;
+        font-size: 0.9em;
+    }
+    
+    .modal-content {
+        width: 98vw;
+        padding: 20px 12px;
+        margin: 8px;
+    }
+    
+    #disciplina-modal .modal-content {
+        min-height: 300px;
+    }
+    
+    #pizza-container {
+        max-width: 240px;
+    }
+    
+    #pizza-container svg {
+        max-width: 240px;
+        max-height: 240px;
+    }
+    
+    .close-btn {
+        top: -30px;
+        font-size: 2em;
+    }
+    
+    #disciplina-modal .close-btn {
+        top: 6px;
+        right: 8px;
+        font-size: 1.3em;
+    }
+    
+    .crud-modal .close-btn {
+        top: 6px;
+        right: 8px;
+        font-size: 1.3em;
+    }
+    
+    .crud-modal input, .crud-modal textarea, .crud-modal select {
+        padding: 6px;
+        font-size: 16px;
+    }
+    
+    .crud-modal button[type="submit"] {
+        padding: 8px;
+        font-size: 0.95em;
+    }
+    
+    /* Tabela muito compacta para telas pequenas */
+    #dashboard-disciplinas table {
+        font-size: 0.8em;
+    }
+    
+    #dashboard-disciplinas table th,
+    #dashboard-disciplinas table td {
+        padding: 6px 2px;
+    }
+    
+    /* Ocultar colunas menos importantes em telas muito pequenas */
+    #dashboard-disciplinas table th:nth-child(1),
+    #dashboard-disciplinas table td:nth-child(1) {
+        display: none; /* Ocultar coluna ID */
+    }
+}
+
+/* Celulares muito pequenos (até 320px) */
+@media (max-width: 320px) {
+    .main-header {
+        padding: 6px 8px;
+        font-size: 0.85em;
+    }
+    
+    .main-header #hacker-btn img {
+        height: 28px;
+    }
+    
+    .main-header #logout-btn {
+        padding: 4px 8px;
+        font-size: 0.75em;
+    }
+    
+    #dashboard, #content-view {
+        padding: 8px;
+    }
+    
+    #dashboard h2 {
+        font-size: 1.2em;
+    }
+    
+    .card-disciplina {
+        padding: 12px 14px;
+    }
+    
+    .fab {
+        width: 40px;
+        height: 40px;
+        bottom: 8px;
+        right: 8px;
+    }
+    
+    .fab svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    #edit-gear-btn { bottom: 8px; right: 8px; }
+    #extra-content-btn { bottom: 60px; right: 8px; }
+    #add-disciplina-btn { bottom: 112px; right: 8px; }
+    
+    #extra-content-menu {
+        bottom: 116px;
+        right: 8px;
+        min-width: 120px;
+    }
+    
+    #pizza-container {
+        max-width: 200px;
+    }
+    
+    #pizza-container svg {
+        max-width: 200px;
+        max-height: 200px;
+    }
+    
+    .modal-content {
+        padding: 16px 8px;
+    }
+    
+    #disciplina-modal .modal-content {
+        min-height: 280px;
+    }
+    
+    .crud-modal input, .crud-modal textarea, .crud-modal select {
+        padding: 4px;
+    }
+}
+
+/* Orientação Landscape em celulares */
+@media (max-width: 767px) and (orientation: landscape) {
+    .main-header {
+        padding: 6px 12px;
+    }
+    
+    main {
+        padding-top: 60px;
+        padding-bottom: 80px;
+    }
+    
+    #dashboard, #content-view {
+        padding: 12px;
+    }
+    
+    .fab {
+        bottom: 8px;
+        right: 8px;
+    }
+    
+    #edit-gear-btn { bottom: 8px; right: 8px; }
+    #extra-content-btn { bottom: 64px; right: 8px; }
+    #add-disciplina-btn { bottom: 120px; right: 8px; }
+    
+    #extra-content-menu {
+        bottom: 124px;
+        right: 8px;
+    }
+    
+    #pizza-container {
+        max-width: 220px;
+    }
+    
+    #pizza-container svg {
+        max-width: 220px;
+        max-height: 220px;
+    }
+}
+
+/* Ajustes para telas de alta densidade (retina) */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .fab {
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+    
+    .fab:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    .modal-content {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+}
+
+/* Acessibilidade - Melhor contraste e tamanhos de toque */
+@media (max-width: 767px) {
+    .fab {
+        min-width: 44px; /* Tamanho mínimo recomendado para toque */
+        min-height: 44px;
+    }
+    
+    .crud-btn {
+        min-width: 32px;
+        min-height: 32px;
+        padding: 4px;
+    }
+    
+    .main-header #logout-btn {
+        min-width: 44px;
+        min-height: 32px;
+    }
+    
+    #extra-content-menu button {
+        min-height: 44px;
+    }
+    
+    /* Melhor contraste para textos */
+    .card-disciplina-title {
+        color: var(--primary-color);
+        font-weight: 600;
+    }
+    
+    .registro-title {
+        color: #000;
+        font-weight: 600;
+    }
+    
+    /* Melhor espaçamento para toque */
+    .card-disciplina {
+        margin-bottom: 12px;
+    }
+    
+    .registro {
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+    }
+    
+    /* Botões mais visíveis */
+    .crud-modal button[type="submit"] {
+        background: var(--primary-color);
+        color: var(--white);
+        font-weight: 600;
+        padding: 12px 16px;
+    }
+    
+    /* Melhor feedback visual para toques */
+    .fab:active {
+        transform: scale(0.95);
+    }
+    
+    .card-disciplina:active {
+        transform: scale(0.98);
+    }
+    
+    /* Scroll horizontal para tabelas quando necessário */
+    #dashboard-disciplinas {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    #dashboard-disciplinas table {
+        white-space: nowrap;
+    }
 }

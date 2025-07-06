@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const n = estudando.length;
         const cx = 190, cy = 190, r = 180;
         const pizzaColors = ["#FFD700", "#FF6347", "#90EE90", "#87CEEB", "#FFB6C1", "#FFA07A", "#20B2AA", "#9370DB", "#F08080", "#40E0D0"];
-        let svg = `<svg width="380" height="380" viewBox="0 0 380 380" style="overflow:visible;">`;
+        let svg = `<svg viewBox="0 0 380 380" style="width: 100%; height: auto; max-width: 380px; max-height: 380px; overflow: visible;">`;
         estudando.forEach((disciplina, i) => {
             const startAngle = (i * 360 / n);
             const endAngle = ((i + 1) * 360 / n);

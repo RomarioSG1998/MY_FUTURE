@@ -2,17 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Login - Portal Pibid</title>
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-image: url('./imagens/loginbackground.jpg'); /* Substitua 'background.jpg' pelo caminho da sua imagem */
-            background-size: cover; /* Faz a imagem cobrir toda a tela */
-            background-position: center; /* Centraliza a imagem */
-            background-repeat: no-repeat; /* Evita repetição da imagem */
+            background-color: #000;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -20,6 +17,205 @@
             margin: 0;
             padding: 10px;
             box-sizing: border-box;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Efeito Matrix - Algoritmo Avançado */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .matrix-column {
+            position: absolute;
+            top: -100%;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 0 0 8px #0f0, 0 0 15px #0f0;
+            animation: matrix-fall linear infinite;
+            z-index: 3;
+            white-space: pre;
+            line-height: 1.2;
+        }
+
+        .matrix-column-bg {
+            position: absolute;
+            top: -100%;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: normal;
+            opacity: 0.3;
+            animation: matrix-fall-slow linear infinite;
+            z-index: 2;
+            white-space: pre;
+            line-height: 1.2;
+        }
+
+        .matrix-column-far {
+            position: absolute;
+            top: -100%;
+            color: #0a0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            font-weight: normal;
+            opacity: 0.2;
+            animation: matrix-fall-very-slow linear infinite;
+            z-index: 1;
+            white-space: pre;
+            line-height: 1.2;
+        }
+
+        .matrix-glow {
+            position: absolute;
+            top: -100%;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 0 0 20px #0f0, 0 0 30px #0f0, 0 0 40px #0f0;
+            animation: matrix-fall-fast linear infinite;
+            z-index: 4;
+            white-space: pre;
+            line-height: 1.2;
+        }
+
+        .matrix-ultra-fast {
+            position: absolute;
+            top: -100%;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 0 0 25px #0f0, 0 0 35px #0f0, 0 0 45px #0f0;
+            animation: matrix-fall-ultra-fast linear infinite;
+            z-index: 5;
+            white-space: pre;
+            line-height: 1.2;
+        }
+
+        @keyframes matrix-fall {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
+            2% {
+                opacity: 1;
+            }
+            8% {
+                opacity: 1;
+            }
+            92% {
+                opacity: 1;
+            }
+            98% {
+                opacity: 0.2;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        @keyframes matrix-fall-slow {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.3;
+            }
+            15% {
+                opacity: 0.3;
+            }
+            85% {
+                opacity: 0.3;
+            }
+            95% {
+                opacity: 0.05;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        @keyframes matrix-fall-very-slow {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
+            8% {
+                opacity: 0.2;
+            }
+            20% {
+                opacity: 0.2;
+            }
+            80% {
+                opacity: 0.2;
+            }
+            92% {
+                opacity: 0.02;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        @keyframes matrix-fall-fast {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
+            1% {
+                opacity: 1;
+            }
+            5% {
+                opacity: 1;
+            }
+            95% {
+                opacity: 1;
+            }
+            99% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        @keyframes matrix-fall-ultra-fast {
+            0% {
+                transform: translateY(-100vh);
+                opacity: 0;
+            }
+            1% {
+                opacity: 1;
+            }
+            3% {
+                opacity: 1;
+            }
+            97% {
+                opacity: 1;
+            }
+            99% {
+                opacity: 0.5;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
         }
         .main-wrapper {
             display: flex;
@@ -27,6 +223,8 @@
             align-items: center;
             height: 100vh;
             width: 100%;
+            z-index: 5;
+            position: relative;
         }
         .login-container {
             background: rgba(255, 255, 255, 0.25);
@@ -38,6 +236,8 @@
             box-sizing: border-box;
             text-align: center;
             margin: 0 auto; /* Centraliza horizontalmente */
+            z-index: 10;
+            position: relative;
         }
         @media (min-width: 1024px) {
             .login-container {
@@ -116,14 +316,16 @@
             .main-wrapper {
                 flex-direction: column;
                 align-items: center;
-                justify-content: flex-start;
-                height: auto;
+                justify-content: center;
+                height: 100vh;
                 min-height: 100vh;
+                padding: 20px;
+                box-sizing: border-box;
             }
             .logos-container {
                 position: static !important;
-                margin-top: 50px !important;
-                margin-bottom: 15px !important;
+                margin-top: 0 !important;
+                margin-bottom: 20px !important;
                 order: 0;
                 width: 50%;
                 justify-content: center;
@@ -138,6 +340,7 @@
             .login-container {
                 order: 1;
                 margin-top: 0 !important;
+                margin-bottom: 0 !important;
             }
             .form-group input, .form-group button {
                 font-size: 0.9rem;
@@ -145,6 +348,82 @@
             }
             .form-footer a {
                 font-size: 0.8rem;
+            }
+        }
+        
+        /* Melhorias específicas para celulares */
+        @media (max-width: 480px) {
+            .main-wrapper {
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                padding: 15px;
+                box-sizing: border-box;
+            }
+            
+            .login-container {
+                max-width: 280px;
+                padding: 12px;
+                margin: 0 auto;
+            }
+            
+            .login-container img {
+                max-width: 120px;
+                margin-bottom: 16px;
+            }
+            
+            .form-group input, .form-group button {
+                font-size: 16px; /* Evita zoom no iOS */
+                padding: 12px;
+                min-height: 44px; /* Tamanho mínimo para toque */
+            }
+            
+            .form-group label {
+                font-size: 0.85rem;
+            }
+            
+            .logos-container {
+                width: 80%;
+                margin-top: 0 !important;
+                margin-bottom: 15px !important;
+            }
+            
+            .logos-container img {
+                height: 30px;
+            }
+        }
+        
+        @media (max-width: 320px) {
+            .main-wrapper {
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+            
+            .login-container {
+                max-width: 260px;
+                padding: 10px;
+                margin: 0 auto;
+            }
+            
+            .login-container img {
+                max-width: 100px;
+            }
+            
+            .form-group input, .form-group button {
+                padding: 10px;
+                font-size: 16px;
+            }
+            
+            .logos-container {
+                margin-top: 0 !important;
+                margin-bottom: 10px !important;
+            }
+            
+            .logos-container img {
+                height: 25px;
             }
         }
         .form-group input {
@@ -156,6 +435,8 @@
             font-size: 1rem;
             box-sizing: border-box;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background-color: #fff;
+            color: #333;
         }
 
         .form-group input:focus {
@@ -167,7 +448,7 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            color: #555;
+            color: #fff;
             font-size: 0.9rem;
         }
 
@@ -195,6 +476,9 @@
     </style>
 </head>
 <body>
+    <!-- Efeito Matrix de fundo -->
+    <div class="matrix-bg" id="matrixBg"></div>
+    
     <div class="main-wrapper">
         <div class="login-container">
             <img src="./imagens/iconehacker.webp" alt="Logo do Portal Pibid">
@@ -274,11 +558,237 @@
         text-align: center;
         padding: 5px;
         font-size: 0.7rem;
-        color: #333;
+        color: #fff;
         background-color: transparent;
         z-index: 1000;
     ">
         Developed by Romário Gadino © 2025 - <span id="current-year"></span>
     </footer>
+
+    <script>
+        // Algoritmo Matrix Avançado
+        class MatrixEffect {
+            constructor() {
+                this.matrixBg = document.getElementById('matrixBg');
+                this.screenWidth = window.innerWidth;
+                this.screenHeight = window.innerHeight;
+                this.columns = [];
+                this.characters = '01アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+                this.katakana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+                this.binary = '01';
+                this.symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+                this.init();
+            }
+
+            init() {
+                this.createColumns();
+                this.startDynamicUpdates();
+                this.handleResize();
+            }
+
+            createColumns() {
+                this.matrixBg.innerHTML = '';
+                this.columns = [];
+                
+                const columnWidth = 18;
+                const columnCount = Math.floor(this.screenWidth / columnWidth);
+                
+                console.log(`Criando ${columnCount} colunas Matrix com algoritmo avançado`);
+
+                // Criar diferentes tipos de colunas com profundidade
+                for (let i = 0; i < columnCount; i++) {
+                    const x = i * columnWidth;
+                    
+                    // Coluna de fundo distante (mais lenta) - 30% das colunas
+                    if (i % 3 === 0) {
+                        this.createColumn(x + 3, 'matrix-column-far', 15, 25, 0.15);
+                    }
+                    
+                    // Coluna de fundo média - 50% das colunas
+                    if (i % 2 === 0) {
+                        this.createColumn(x + 6, 'matrix-column-bg', 12, 20, 0.25);
+                    }
+                    
+                    // Coluna principal - todas as colunas
+                    this.createColumn(x, 'matrix-column', 8, 15, 1);
+                    
+                    // Coluna brilhante (especial) - 15% das colunas
+                    if (i % 6 === 0) {
+                        this.createColumn(x - 1, 'matrix-glow', 5, 10, 1.3);
+                    }
+                    
+                    // Coluna ultra-rápida (muito especial) - 8% das colunas
+                    if (i % 12 === 0) {
+                        this.createColumn(x - 3, 'matrix-ultra-fast', 3, 6, 1.5);
+                    }
+                }
+            }
+
+            createColumn(x, className, minDuration, maxDuration, intensity) {
+                const column = document.createElement('div');
+                column.className = className;
+                column.style.left = x + 'px';
+                
+                const duration = Math.random() * (maxDuration - minDuration) + minDuration;
+                const delay = Math.random() * 5;
+                
+                column.style.animationDuration = duration + 's';
+                column.style.animationDelay = delay + 's';
+                
+                // Gerar conteúdo dinâmico baseado no tipo
+                const content = this.generateContent(className, intensity);
+                column.textContent = content;
+                
+                // Adicionar propriedades dinâmicas
+                column.dataset.type = className;
+                column.dataset.intensity = intensity;
+                column.dataset.lastUpdate = Date.now();
+                
+                this.matrixBg.appendChild(column);
+                this.columns.push(column);
+            }
+
+            generateContent(className, intensity) {
+                let content = '';
+                // Aumentar significativamente o número de caracteres para atravessar toda a tela
+                const length = Math.floor(Math.random() * 80) + 60; // 60-140 caracteres
+                
+                for (let i = 0; i < length; i++) {
+                    let charSet;
+                    let probability;
+                    
+                    switch(className) {
+                        case 'matrix-ultra-fast':
+                            charSet = this.katakana + this.binary + this.symbols;
+                            probability = 0.8;
+                            break;
+                        case 'matrix-glow':
+                            charSet = this.katakana + this.binary;
+                            probability = 0.75;
+                            break;
+                        case 'matrix-column':
+                            charSet = this.binary + this.symbols;
+                            probability = 0.65;
+                            break;
+                        case 'matrix-column-bg':
+                            charSet = this.binary;
+                            probability = 0.55;
+                            break;
+                        case 'matrix-column-far':
+                            charSet = this.binary;
+                            probability = 0.35;
+                            break;
+                        default:
+                            charSet = this.binary;
+                            probability = 0.5;
+                    }
+                    
+                    // Criar padrões mais interessantes
+                    if (Math.random() < probability) {
+                        const randomChar = charSet[Math.floor(Math.random() * charSet.length)];
+                        content += randomChar;
+                    } else {
+                        // Adicionar espaços estratégicos para criar "ondas"
+                        if (Math.random() < 0.3) {
+                            content += ' ';
+                        } else {
+                            content += ' ';
+                        }
+                    }
+                    
+                    // Quebras de linha mais frequentes para cobrir toda a tela
+                    if (i % 3 === 0) content += '\n';
+                }
+                
+                return content;
+            }
+
+            startDynamicUpdates() {
+                // Atualizar conteúdo das colunas periodicamente
+                setInterval(() => {
+                    this.updateColumnContent();
+                }, 2500); // Mais frequente
+                
+                // Efeito de "glitch" aleatório
+                setInterval(() => {
+                    this.createGlitchEffect();
+                }, 1500); // Mais frequente
+                
+                // Efeito de "onda" que percorre as colunas
+                setInterval(() => {
+                    this.createWaveEffect();
+                }, 4000);
+            }
+
+            updateColumnContent() {
+                this.columns.forEach(column => {
+                    const now = Date.now();
+                    const lastUpdate = parseInt(column.dataset.lastUpdate);
+                    
+                    // Atualizar apenas colunas que não foram atualizadas recentemente
+                    if (now - lastUpdate > 5000) {
+                        const intensity = parseFloat(column.dataset.intensity);
+                        const newContent = this.generateContent(column.className, intensity);
+                        column.textContent = newContent;
+                        column.dataset.lastUpdate = now;
+                    }
+                });
+            }
+
+            createGlitchEffect() {
+                // Selecionar uma coluna aleatória para efeito glitch
+                if (this.columns.length > 0) {
+                    const randomColumn = this.columns[Math.floor(Math.random() * this.columns.length)];
+                    
+                    // Aplicar efeito de glitch temporário
+                    randomColumn.style.filter = 'hue-rotate(180deg) brightness(1.5)';
+                    randomColumn.style.textShadow = '0 0 20px #ff0000, 0 0 30px #ff0000';
+                    
+                    setTimeout(() => {
+                        randomColumn.style.filter = '';
+                        randomColumn.style.textShadow = '';
+                    }, 150); // Mais rápido
+                }
+            }
+
+            createWaveEffect() {
+                // Criar uma onda de brilho que percorre as colunas
+                const waveColumns = this.columns.filter(col => 
+                    col.className === 'matrix-column' || col.className === 'matrix-glow'
+                );
+                
+                if (waveColumns.length > 0) {
+                    const randomColumn = waveColumns[Math.floor(Math.random() * waveColumns.length)];
+                    
+                    // Efeito de onda suave
+                    randomColumn.style.textShadow = '0 0 30px #0f0, 0 0 40px #0f0, 0 0 50px #0f0';
+                    randomColumn.style.filter = 'brightness(1.8)';
+                    
+                    setTimeout(() => {
+                        randomColumn.style.textShadow = '';
+                        randomColumn.style.filter = '';
+                    }, 800);
+                }
+            }
+
+            handleResize() {
+                let resizeTimeout;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                        this.screenWidth = window.innerWidth;
+                        this.screenHeight = window.innerHeight;
+                        this.createColumns();
+                    }, 250);
+                });
+            }
+        }
+
+        // Inicializar o efeito Matrix avançado
+        const matrixEffect = new MatrixEffect();
+        
+        // Atualizar o ano no footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>
