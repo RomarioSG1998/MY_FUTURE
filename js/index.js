@@ -168,6 +168,149 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<a href="${link}" target="_blank">${link}</a>`;
     }
 
+    // Função para buscar e exibir conteúdo extra de uma disciplina, no padrão de cards
+    async function fetchExtraContent(disciplinaId) {
+        elements.contentView.innerHTML = `<div style='text-align:center; padding: 40px;'>Carregando...</div>`;
+        showContentView();
+        const { data, error } = await supabase.from('extra_content').select('*').eq('id_disciplina', disciplinaId);
+        if (error) {
+            elements.contentView.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Erro ao buscar conteúdo extra.</div>`;
+            return;
+        }
+        renderExtraContentCards(data, appState.isEditMode, disciplinaId);
+        elements.extraContentMenu.classList.add('hidden');
+    }
+
+    // Função para renderizar Conteúdo Extra como cards, igual às outras seções
+    function renderExtraContentCards(data, isEditMode, idDisciplina) {
+        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>`;
+        if (!data || data.length === 0) {
+            contentHtml += `
+                <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
+                    Ainda não há conteúdo extra para esta disciplina.
+                </div>
+                <div style="text-align:center;">
+                    <button class="add-new-extra-content-btn">➕ Adicionar Conteúdo Extra</button>
+                </div>`;
+            elements.contentView.innerHTML = contentHtml;
+            elements.contentView.querySelector('.add-new-extra-content-btn').onclick = () => handleCreateExtraContent(idDisciplina);
+            return;
+        }
+        data.forEach(item => {
+            let itemHtml = '';
+            if (item.tipo_arquivo === 'Texto') {
+                itemHtml = `
+                    ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
+                    <span class='registro-text'>${item.link_or_text}</span>
+                `;
+            } else if (item.tipo_arquivo === 'Vídeo') {
+                const ytMatch = item.link_or_text && item.link_or_text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+                if (ytMatch && ytMatch[1]) {
+                    itemHtml = `
+                        ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
+                        <div class='video-responsive'><iframe src='https://www.youtube.com/embed/${ytMatch[1]}' allowfullscreen></iframe></div>
+                    `;
+                } else {
+                    itemHtml = `
+                        ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
+                        <a href='${item.link_or_text}' target='_blank'>${item.link_or_text}</a>
+                    `;
+                }
+            } else if (item.tipo_arquivo === 'Imagem') {
+                itemHtml = `
+                    ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
+                    <img src='${item.link_or_text}' alt='Imagem' class='registro-img' style='max-width:220px;max-height:120px;display:block;margin:8px auto;'>
+                    <div><a href='${item.link_or_text}' target='_blank'>Abrir imagem</a></div>
+                `;
+            } else {
+                itemHtml = `
+                    ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
+                    <span class='registro-text'>${item.link_or_text}</span>
+                `;
+            }
+            contentHtml += `
+                <div class='registro' data-id='${item.id}'>
+                    ${isEditMode ? `
+                        <div class='registro-toolbar'>
+                            <button class='crud-btn edit' title='Editar'>✏️</button>
+                            <button class='crud-btn delete' title='Excluir'>🗑️</button>
+                        </div>
+                    ` : ''}
+                    ${itemHtml}
+                </div>
+            `;
+        });
+        if (isEditMode) {
+            contentHtml += `<div style='text-align:center; margin-top:20px;'><button class='add-new-extra-content-btn'>➕ Adicionar Conteúdo Extra</button></div>`;
+        }
+        elements.contentView.innerHTML = contentHtml;
+        // Eventos CRUD
+        if (isEditMode) {
+            elements.contentView.querySelectorAll('.crud-btn.edit').forEach(btn => {
+                const id = btn.closest('.registro').dataset.id;
+                btn.onclick = () => handleEditExtraContent(id);
+            });
+            elements.contentView.querySelectorAll('.crud-btn.delete').forEach(btn => {
+                const id = btn.closest('.registro').dataset.id;
+                btn.onclick = () => handleDeleteExtraContent(id, idDisciplina);
+            });
+            const addBtn = elements.contentView.querySelector('.add-new-extra-content-btn');
+            if (addBtn) addBtn.onclick = () => handleCreateExtraContent(idDisciplina);
+        }
+    }
+
+    // Funções CRUD para Conteúdo Extra
+    async function handleCreateExtraContent(idDisciplina) {
+        createCrudModal({
+            title: 'Novo Conteúdo Extra',
+            formFields: [
+                { name: 'tipo_arquivo', type: 'select', options: [
+                    { value: 'Texto', label: 'Texto' },
+                    { value: 'Vídeo', label: 'Vídeo' },
+                    { value: 'Imagem', label: 'Imagem' }
+                ], placeholder: 'Tipo do Arquivo' },
+                { name: 'title', type: 'text', placeholder: 'Título' },
+                { name: 'link_or_text', type: 'text', placeholder: 'Link, texto ou URL da imagem' }
+            ],
+            onSubmit: async (data) => {
+                await supabase.from('extra_content').insert([{ ...data, id_disciplina: idDisciplina }]);
+                appState.currentContentType = 'extra';
+                await fetchExtraContent(idDisciplina);
+            }
+        });
+    }
+
+    async function handleEditExtraContent(id) {
+        const { data: item, error } = await supabase.from('extra_content').select('*').eq('id', id).single();
+        if (error) return alert('Erro ao buscar item para edição.');
+        createCrudModal({
+            title: 'Editar Conteúdo Extra',
+            formFields: [
+                { name: 'tipo_arquivo', type: 'select', options: [
+                    { value: 'Texto', label: 'Texto' },
+                    { value: 'Vídeo', label: 'Vídeo' },
+                    { value: 'Imagem', label: 'Imagem' }
+                ], placeholder: 'Tipo do Arquivo' },
+                { name: 'title', type: 'text', placeholder: 'Título' },
+                { name: 'link_or_text', type: 'text', placeholder: 'Link, texto ou URL da imagem' }
+            ],
+            initialData: item,
+            onSubmit: async (data) => {
+                await supabase.from('extra_content').update(data).eq('id', id);
+                appState.currentContentType = 'extra';
+                await fetchExtraContent(item.id_disciplina);
+            }
+        });
+    }
+
+    async function handleDeleteExtraContent(id, idDisciplina) {
+        if (confirm('Tem certeza que deseja excluir este conteúdo extra?')) {
+            await supabase.from('extra_content').delete().eq('id', id);
+            appState.currentContentType = 'extra';
+            await fetchExtraContent(idDisciplina);
+        }
+    }
+
     // --- LÓGICA DE DADOS (FETCH & CRUD) ---
     
     // Carrega os dados do dashboard inicial
@@ -416,8 +559,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = Object.fromEntries(formData.entries());
             await onSubmit(data);
             elements.crudModalRoot.innerHTML = '';
-            // Recarrega o conteúdo atual
-            fetchContent(appState.currentContentType, appState.currentDisciplinaId);
+            // Remover chamada para fetchContent(appState.currentContentType, appState.currentDisciplinaId);
+            // O onSubmit de cada CRUD já faz o refresh correto
         };
     }
 
@@ -532,7 +675,12 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.editGearBtn.addEventListener('click', () => {
         appState.isEditMode = !appState.isEditMode;
         document.body.classList.toggle('edit-mode', appState.isEditMode);
-        renderContent(); // Re-renderiza o conteúdo para mostrar/esconder botões de CRUD
+        // Se estiver em Conteúdo Extra, re-renderiza os cards de extra
+        if (appState.currentContentType === 'extra') {
+            fetchExtraContent(appState.currentDisciplinaId);
+        } else {
+            renderContent();
+        }
     });
 
     elements.extraContentBtn.addEventListener('click', (e) => {
@@ -619,4 +767,33 @@ document.addEventListener('DOMContentLoaded', () => {
             renderDisciplinaListInModal();
         }
     }
+
+    // Evento do menu lateral para Conteúdo Extra
+    const menuExtraBtn = document.getElementById('menu-extra-btn');
+    if (menuExtraBtn) {
+        menuExtraBtn.onclick = async () => {
+            appState.currentContentType = 'extra';
+            await fetchExtraContent(appState.currentDisciplinaId);
+        };
+    }
+
+    // Adicionar bloco para exibir erros JS na tela
+    window.addEventListener('error', function(event) {
+        let errDiv = document.getElementById('global-js-error');
+        if (!errDiv) {
+            errDiv = document.createElement('div');
+            errDiv.id = 'global-js-error';
+            errDiv.style.position = 'fixed';
+            errDiv.style.bottom = '0';
+            errDiv.style.left = '0';
+            errDiv.style.right = '0';
+            errDiv.style.background = '#b00';
+            errDiv.style.color = '#fff';
+            errDiv.style.padding = '8px 16px';
+            errDiv.style.zIndex = '9999';
+            errDiv.style.fontSize = '1.1em';
+            document.body.appendChild(errDiv);
+        }
+        errDiv.textContent = 'Erro JS: ' + event.message + ' (' + event.filename + ':' + event.lineno + ')';
+    });
 });
