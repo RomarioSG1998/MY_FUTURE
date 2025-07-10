@@ -8,6 +8,49 @@
     --danger-color: #b00;
     --card-shadow: 0 4px 12px rgba(0,0,0,0.08);
     --border-radius: 12px;
+    
+    /* Variáveis específicas para mobile */
+    --mobile-touch-target: 44px;
+    --mobile-spacing: 16px;
+    --mobile-border-radius: 8px;
+    --mobile-font-size: 16px;
+    --mobile-line-height: 1.4;
+    --mobile-transition: 0.2s ease;
+}
+
+/* Melhorias específicas para dispositivos móveis */
+@media (max-width: 768px) {
+    :root {
+        --card-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        --border-radius: var(--mobile-border-radius);
+    }
+    
+    /* Prevenir zoom em inputs no iOS */
+    input, textarea, select {
+        font-size: var(--mobile-font-size) !important;
+    }
+    
+    /* Melhorar scroll suave */
+    html {
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        /* Prevenir scroll horizontal */
+        overflow-x: hidden;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    /* Otimizar para touch */
+    * {
+        -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Melhorar performance de animações */
+    .fab, .card-disciplina, .crud-btn {
+        will-change: transform;
+        transform: translateZ(0);
+    }
 }
 
 /* Reset e Estilos Base */
@@ -21,13 +64,30 @@ body {
     font-family: Arial, sans-serif;
     background-color: var(--light-bg);
     color: var(--dark-text);
+    /* Melhorar renderização em mobile */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    /* Prevenir scroll horizontal */
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* Melhorar acessibilidade em mobile */
+@media (max-width: 768px) {
+    body {
+        font-size: var(--mobile-font-size);
+        line-height: var(--mobile-line-height);
+    }
 }
 
 .hidden {
     display: none !important;
 }
 
-/* Header */
+/* Header - Melhorado para mobile */
 .main-header {
     width: 100%;
     background: var(--primary-color);
@@ -42,6 +102,31 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    /* Melhorar para mobile */
+    min-height: var(--mobile-touch-target);
+}
+
+/* Melhorias específicas para mobile no header */
+@media (max-width: 768px) {
+    .main-header {
+        padding: 12px var(--mobile-spacing);
+        font-size: 1em;
+        flex-wrap: wrap;
+        gap: 8px;
+        /* Garantir altura mínima para touch */
+        min-height: 60px;
+        /* Melhorar layout para centralizar logo */
+        position: relative;
+    }
+    
+    .main-header span {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        order: 1;
+    }
 }
 
 .main-header #hacker-btn {
@@ -51,11 +136,38 @@ body {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
+    /* Melhorar para touch */
+    min-width: var(--mobile-touch-target);
+    min-height: var(--mobile-touch-target);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .main-header #hacker-btn {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        order: 2;
+        flex-shrink: 0;
+        /* Garantir que fique centralizado */
+        z-index: 10;
+    }
 }
 
 .main-header #hacker-btn img {
     height: 48px;
     width: auto;
+    /* Melhorar para mobile */
+    max-width: 100%;
+    max-height: 100%;
+}
+
+@media (max-width: 768px) {
+    .main-header #hacker-btn img {
+        height: 36px;
+    }
 }
 
 .main-header #logout-btn {
@@ -67,12 +179,55 @@ body {
     font-size: 0.9em;
     cursor: pointer;
     transition: background 0.2s;
+    /* Melhorar para touch */
+    min-width: var(--mobile-touch-target);
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-/* Conteúdo Principal (Dashboard e Visão de Conteúdo) */
+@media (max-width: 768px) {
+    .main-header #logout-btn {
+        padding: 8px 16px;
+        font-size: 0.85em;
+        order: 3;
+        flex-shrink: 0;
+        /* Melhorar feedback visual */
+        position: relative;
+        overflow: hidden;
+        /* Garantir que não interfira na logo centralizada */
+        z-index: 5;
+    }
+    
+    .main-header #logout-btn:active {
+        transform: scale(0.95);
+        background: #f0f0f0;
+    }
+}
+
+/* Conteúdo Principal (Dashboard e Visão de Conteúdo) - Otimizado para mobile */
 main {
     padding-top: 100px;
     padding-bottom: 40px;
+    /* Melhorar para mobile */
+    min-height: calc(100vh - 100px);
+    /* Garantir centralização */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+@media (max-width: 768px) {
+    main {
+        padding-top: 80px;
+        padding-bottom: 120px; /* Espaço para os FABs */
+        min-height: calc(100vh - 80px);
+        /* Melhorar centralização no mobile */
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
 }
 
 #dashboard, #content-view {
@@ -83,10 +238,33 @@ main {
     background: var(--white);
     border-radius: var(--border-radius);
     box-shadow: var(--card-shadow);
+    /* Melhorar para mobile */
+    overflow-x: hidden;
+}
+
+@media (max-width: 768px) {
+    #dashboard, #content-view {
+        width: 100%;
+        max-width: 100%;
+        padding: var(--mobile-spacing);
+        margin: 0 auto;
+        border-radius: 0;
+        /* Melhorar scroll */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        /* Garantir centralização */
+        box-sizing: border-box;
+    }
 }
 
 #content-view.videos-mode {
     padding-top: 32px;
+}
+
+@media (max-width: 768px) {
+    #content-view.videos-mode {
+        padding-top: var(--mobile-spacing);
+    }
 }
 
 #dashboard h2 {
@@ -94,14 +272,42 @@ main {
     margin-bottom: 24px;
     color: var(--primary-color);
     text-align: center;
+    /* Melhorar para mobile */
+    font-size: 1.5em;
+    font-weight: 600;
+    /* Garantir centralização */
+    width: 100%;
+    max-width: 100%;
 }
 
-/* Cards de Disciplina no Dashboard */
+@media (max-width: 768px) {
+    #dashboard h2 {
+        font-size: 1.3em;
+        margin-bottom: var(--mobile-spacing);
+        line-height: 1.3;
+    }
+}
+
+/* Cards de Disciplina no Dashboard - Otimizados para mobile */
 #dashboard-disciplinas {
     display: flex;
     flex-wrap: wrap;
     gap: 18px 24px;
     margin-bottom: 24px;
+    /* Melhorar para mobile */
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    #dashboard-disciplinas {
+        gap: 12px;
+        margin-bottom: var(--mobile-spacing);
+        flex-direction: column;
+        /* Garantir centralização */
+        width: 100%;
+        max-width: 100%;
+        align-items: center;
+    }
 }
 
 .card-disciplina {
@@ -113,6 +319,27 @@ main {
     min-width: 180px;
     flex: 1 1 220px;
     transition: transform 0.2s, box-shadow 0.2s;
+    /* Melhorar para mobile */
+    position: relative;
+    overflow: hidden;
+}
+
+@media (max-width: 768px) {
+    .card-disciplina {
+        min-width: 100%;
+        flex: 1 1 100%;
+        padding: var(--mobile-spacing);
+        margin-bottom: 8px;
+        /* Melhorar feedback visual */
+        border: 1px solid transparent;
+        transition: all var(--mobile-transition);
+    }
+    
+    .card-disciplina:active {
+        transform: scale(0.98);
+        background: #e8f0f8;
+        border-color: var(--primary-color);
+    }
 }
 
 .card-disciplina:hover {
@@ -120,59 +347,151 @@ main {
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
+@media (max-width: 768px) {
+    .card-disciplina:hover {
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+}
+
 .card-disciplina-title {
     font-size: 1.15em;
     font-weight: bold;
     color: var(--primary-color);
+    /* Melhorar para mobile */
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+@media (max-width: 768px) {
+    .card-disciplina-title {
+        font-size: 1.1em;
+        margin-bottom: 6px;
+    }
 }
 
 .card-disciplina-date, .card-disciplina-situation {
     font-size: 0.95em;
     color: var(--light-text);
+    /* Melhorar para mobile */
+    display: block;
+    margin-bottom: 4px;
+}
+
+@media (max-width: 768px) {
+    .card-disciplina-date, .card-disciplina-situation {
+        font-size: 0.9em;
+        margin-bottom: 2px;
+    }
 }
 
 /* Infos do Dashboard */
 #dashboard-infos {
     font-size: 1.1em;
     color: #333;
+    /* Melhorar para mobile */
+    line-height: var(--mobile-line-height);
 }
+
+@media (max-width: 768px) {
+    #dashboard-infos {
+        font-size: 1em;
+        padding: 0 var(--mobile-spacing);
+    }
+}
+
 #dashboard-infos b {
     color: var(--primary-color);
 }
 
-/* Registros de Conteúdo (Texto, Vídeo, Prática) */
+/* Registros de Conteúdo (Texto, Vídeo, Prática) - Otimizados para mobile */
 .registro {
     display: block;
     margin-bottom: 1.5em;
     line-height: 1.6;
     border-bottom: 1px solid #eee;
     padding-bottom: 1em;
+    /* Melhorar para mobile */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
+
+@media (max-width: 768px) {
+    .registro {
+        margin-bottom: 1.2em;
+        padding-bottom: 0.8em;
+        line-height: var(--mobile-line-height);
+    }
+}
+
 .registro:last-child {
     border-bottom: none;
 }
+
 .registro-title {
     color: #111;
     font-size: 1.2em;
     font-weight: bold;
     display: block;
     margin-bottom: 0.3em;
+    /* Melhorar para mobile */
+    line-height: 1.3;
 }
+
+@media (max-width: 768px) {
+    .registro-title {
+        font-size: 1.1em;
+        margin-bottom: 0.2em;
+    }
+}
+
 .registro-text {
     white-space: pre-line;
     word-wrap: break-word;
+    /* Melhorar para mobile */
+    line-height: var(--mobile-line-height);
 }
+
+@media (max-width: 768px) {
+    .registro-text {
+        font-size: 0.95em;
+    }
+}
+
 .registro-img {
     display: block;
     max-width: 100%;
     margin: 16px 0;
     border-radius: 8px;
+    /* Melhorar para mobile */
+    height: auto;
 }
+
+@media (max-width: 768px) {
+    .registro-img {
+        margin: 12px 0;
+        border-radius: var(--mobile-border-radius);
+    }
+}
+
 .registro a {
     color: var(--primary-color);
     word-break: break-all;
     display: inline-block;
     margin-top: 6px;
+    /* Melhorar para mobile */
+    text-decoration: none;
+    padding: 4px 0;
+}
+
+@media (max-width: 768px) {
+    .registro a {
+        margin-top: 4px;
+        /* Melhorar área de toque */
+        min-height: var(--mobile-touch-target);
+        display: flex;
+        align-items: center;
+    }
 }
 
 .link-fallback {
@@ -182,6 +501,19 @@ main {
     text-decoration: none;
     border: 1px solid #ddd;
     transition: all 0.2s;
+    /* Melhorar para mobile */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--mobile-touch-target);
+}
+
+@media (max-width: 768px) {
+    .link-fallback {
+        padding: 10px 16px;
+        border-radius: var(--mobile-border-radius);
+        font-size: 0.9em;
+    }
 }
 
 .link-fallback:hover {
@@ -190,20 +522,29 @@ main {
     border-color: var(--primary-color);
 }
 
-/* Imagens Responsivas */
+@media (max-width: 768px) {
+    .link-fallback:active {
+        transform: scale(0.95);
+        background: #1565c0;
+    }
+}
+
+/* Imagens Responsivas - Melhoradas para mobile */
 .image-responsive {
     position: relative;
     width: 100%;
     max-width: 900px;
     margin: 24px auto;
     text-align: center;
+    /* Melhorar para mobile */
+    overflow: hidden;
 }
 
-.image-responsive img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+@media (max-width: 768px) {
+    .image-responsive {
+        margin: 16px auto;
+        border-radius: var(--mobile-border-radius);
+    }
 }
 
 /* Toolbar de Edição (CRUD) */
@@ -212,7 +553,18 @@ main {
     justify-content: flex-end;
     gap: 8px;
     margin-bottom: 4px;
+    /* Melhorar para mobile */
+    flex-wrap: wrap;
 }
+
+@media (max-width: 768px) {
+    .registro-toolbar {
+        gap: 6px;
+        margin-bottom: 8px;
+        justify-content: flex-start;
+    }
+}
+
 .crud-btn {
     background: none;
     border: none;
@@ -222,12 +574,36 @@ main {
     padding: 2px 6px;
     border-radius: 4px;
     transition: background 0.2s, color 0.2s;
+    /* Melhorar para mobile */
+    min-width: 32px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 768px) {
+    .crud-btn {
+        min-width: var(--mobile-touch-target);
+        min-height: var(--mobile-touch-target);
+        padding: 8px;
+        border-radius: var(--mobile-border-radius);
+        font-size: 1.3em;
+        /* Melhorar feedback visual */
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .crud-btn:active {
+        transform: scale(0.9);
+        background: rgba(0,0,0,0.1);
+    }
 }
 .crud-btn:hover { background: #f0f0f0; }
 .crud-btn.delete { color: var(--danger-color); }
 .crud-btn.delete:hover { color: var(--white); background-color: var(--danger-color); }
 
-/* Botões Flutuantes (FAB) */
+/* Botões Flutuantes (FAB) - Melhorados para mobile */
 .fab {
     position: fixed;
     z-index: 3000;
@@ -242,6 +618,27 @@ main {
     justify-content: center;
     cursor: pointer;
     transition: box-shadow 0.2s, background-color 0.2s;
+    /* Melhorar para mobile */
+    min-width: var(--mobile-touch-target);
+    min-height: var(--mobile-touch-target);
+    /* Melhorar performance */
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+@media (max-width: 768px) {
+    .fab {
+        width: 52px;
+        height: 52px;
+        /* Melhorar feedback visual */
+        box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+        border: 2px solid rgba(255,255,255,0.8);
+    }
+    
+    .fab:active {
+        transform: scale(0.9) translateZ(0);
+        box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+    }
 }
 .fab:hover {
     box-shadow: 0 4px 12px rgba(0,0,0,0.22);
@@ -256,7 +653,13 @@ main {
 }
 #edit-gear-btn { bottom: 24px; right: 24px; }
 #extra-content-btn { bottom: 90px; right: 24px; }
-#add-disciplina-btn { bottom: 156px; right: 24px; }
+#add-disciplina-btn { 
+    bottom: 156px; 
+    right: 24px; 
+    /* Garantir posicionamento correto no mobile */
+    position: fixed;
+    z-index: 1000;
+}
 
 /* Modo de Edição Ativo */
 body.edit-mode #edit-gear-btn {
@@ -266,7 +669,7 @@ body.edit-mode #edit-gear-btn svg path {
     fill: var(--white);
 }
 
-/* Menu de Conteúdo Extra */
+/* Menu de Conteúdo Extra - Melhorado para mobile */
 #extra-content-menu {
     position: fixed;
     bottom: 160px;
@@ -279,6 +682,19 @@ body.edit-mode #edit-gear-btn svg path {
     min-width: 150px;
     padding: 6px 0;
     animation: fadeInMenu 0.2s;
+    /* Melhorar para mobile */
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    #extra-content-menu {
+        bottom: 140px;
+        right: 16px;
+        min-width: 140px;
+        border-radius: var(--mobile-border-radius);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        border: none;
+    }
 }
 #extra-content-menu button {
     background: none;
@@ -292,17 +708,124 @@ body.edit-mode #edit-gear-btn svg path {
     display: flex;
     align-items: center;
     gap: 8px;
+    /* Melhorar para mobile */
+    min-height: var(--mobile-touch-target);
+}
+
+@media (max-width: 768px) {
+    #extra-content-menu button {
+        padding: 12px 16px;
+        font-size: 1em;
+        /* Melhorar feedback visual */
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #extra-content-menu button:active {
+        background: var(--light-bg);
+        transform: scale(0.98);
+    }
+    
+
+    
+    /* Estilo para o botão de tarefas no dashboard - mobile */
+    .btn-tasks {
+        padding: 10px 16px;
+        font-size: 1em;
+        min-height: 44px;
+        margin-top: 12px;
+        border-radius: 8px;
+        box-shadow: 0 3px 10px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-tasks:active {
+        transform: scale(0.95);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
 }
 #extra-content-menu button:hover {
     background: var(--light-bg);
 }
+
+
 
 @keyframes fadeInMenu {
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Modal Genérico */
+@keyframes pulseTasks {
+    0% { box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); }
+    50% { box-shadow: 0 4px 16px rgba(102, 126, 234, 0.5); }
+    100% { box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3); }
+}
+
+
+
+
+
+/* Estilo para o botão de tarefas no dashboard */
+.btn-tasks {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    margin-top: 8px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-tasks::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-tasks:hover::before {
+    left: 100%;
+}
+
+.btn-tasks:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-tasks:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+}
+
+/* Animação de pulso para o botão de tarefas no dashboard */
+.btn-tasks {
+    animation: pulseTasks 3s infinite;
+}
+
+/* Estilo para quando há tarefas pendentes no dashboard */
+.btn-tasks.has-pending {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    animation: pulseTasks 2s infinite;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+}
+
+.btn-tasks.has-pending:hover {
+    background: linear-gradient(135deg, #ff5252 0%, #e74c3c 100%);
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.5);
+}
+
+/* Modal Genérico - Melhorado para mobile */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -314,6 +837,18 @@ body.edit-mode #edit-gear-btn svg path {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Melhorar para mobile */
+    padding: var(--mobile-spacing);
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 8px;
+        /* Melhorar scroll */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 .modal-content {
     position: relative;
@@ -323,6 +858,21 @@ body.edit-mode #edit-gear-btn svg path {
     max-width: 500px;
     width: 90vw;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    /* Melhorar para mobile */
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 100%;
+        max-width: none;
+        padding: 24px 16px;
+        border-radius: var(--mobile-border-radius);
+        max-height: 95vh;
+        /* Melhorar scroll */
+        -webkit-overflow-scrolling: touch;
+    }
 }
 #disciplina-modal .modal-content {
     background: var(--white);
@@ -414,6 +964,18 @@ body.edit-mode #edit-gear-btn svg path {
     border: 1px solid #ccc;
     border-radius: 6px;
     font-size: 1em;
+    /* Melhorar para mobile */
+    box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+    .crud-modal input, .crud-modal textarea, .crud-modal select {
+        padding: 12px;
+        font-size: var(--mobile-font-size);
+        border-radius: var(--mobile-border-radius);
+        /* Melhorar acessibilidade */
+        min-height: var(--mobile-touch-target);
+    }
 }
 .crud-modal textarea {
     min-height: 100px;
@@ -428,6 +990,25 @@ body.edit-mode #edit-gear-btn svg path {
     border-radius: 6px;
     cursor: pointer;
     transition: background 0.2s;
+    /* Melhorar para mobile */
+    min-height: var(--mobile-touch-target);
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .crud-modal button[type="submit"] {
+        padding: 16px;
+        font-size: 1.1em;
+        border-radius: var(--mobile-border-radius);
+        /* Melhorar feedback visual */
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .crud-modal button[type="submit"]:active {
+        transform: scale(0.98);
+        background: #1565c0;
+    }
 }
 .crud-modal button[type="submit"]:hover {
     background: #1565c0;
@@ -643,6 +1224,89 @@ body.edit-mode #edit-gear-btn svg path {
     text-align: right;
 }
 
+/* ===== MELHORIAS ESPECÍFICAS PARA MOBILE ===== */
+
+/* Classe para dispositivos móveis */
+.mobile-device {
+    /* Melhorar renderização */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+}
+
+/* Feedback visual para inputs */
+.input-feedback {
+    animation: inputPulse 0.2s ease-out;
+}
+
+@keyframes inputPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Loading spinner para mobile */
+.mobile-loading {
+    transition: opacity 0.3s ease;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    font-size: 16px;
+    color: var(--dark-text);
+    font-weight: 500;
+}
+
+/* Melhorias para layout mobile */
+.mobile-layout .fab {
+    /* Ajustes específicos para mobile */
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.mobile-layout .card-disciplina {
+    /* Melhor espaçamento em mobile */
+    margin-bottom: 12px;
+}
+
+/* Melhorar acessibilidade de toque */
+@media (max-width: 768px) {
+    /* Garantir tamanho mínimo para toque em todos os elementos interativos */
+    button, a, input, select, textarea {
+        min-height: var(--mobile-touch-target);
+        min-width: var(--mobile-touch-target);
+    }
+    
+    /* Melhorar feedback visual para toques */
+    button:active, a:active, .card-disciplina:active {
+        transform: scale(0.95);
+        transition: transform 0.1s ease;
+    }
+    
+    /* Melhorar contraste para textos */
+    .card-disciplina-title, .registro-title {
+        font-weight: 600;
+    }
+    
+    /* Melhorar espaçamento geral */
+    * {
+        letter-spacing: 0.01em;
+    }
+}
+
 /* ===== MEDIA QUERIES PARA RESPONSIVIDADE ===== */
 
 /* Tablets (768px - 1024px) */
@@ -657,8 +1321,11 @@ body.edit-mode #edit-gear-btn svg path {
     }
     
     #dashboard, #content-view {
-        width: 95vw;
+        width: 95%;
+        max-width: 95%;
         padding: 20px;
+        margin: 0 auto;
+        box-sizing: border-box;
     }
     
     #pizza-container {
@@ -691,10 +1358,11 @@ body.edit-mode #edit-gear-btn svg path {
     }
     
     .main-header #hacker-btn {
-        position: relative;
-        left: auto;
-        transform: none;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
         order: 2;
+        z-index: 10;
     }
     
     .main-header #hacker-btn img {
@@ -713,9 +1381,11 @@ body.edit-mode #edit-gear-btn svg path {
     }
     
     #dashboard, #content-view {
-        width: 98vw;
+        width: 98%;
+        max-width: 98%;
         padding: 16px;
-        margin: 0 8px;
+        margin: 0 auto;
+        box-sizing: border-box;
     }
     
     #dashboard h2 {
@@ -770,6 +1440,17 @@ body.edit-mode #edit-gear-btn svg path {
     #extra-content-menu button {
         padding: 8px 14px;
         font-size: 1em;
+    }
+    
+
+    
+    /* Estilo para o botão de tarefas no dashboard - telas menores */
+    .btn-tasks {
+        padding: 8px 14px;
+        font-size: 0.9em;
+        margin-top: 10px;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
     }
     
     .modal-content {
@@ -835,10 +1516,12 @@ body.edit-mode #edit-gear-btn svg path {
     }
     
     #dashboard, #content-view {
-        width: 100vw;
+        width: 100%;
+        max-width: 100%;
         padding: 12px;
-        margin: 0;
+        margin: 0 auto;
         border-radius: 0;
+        box-sizing: border-box;
     }
     
     #dashboard h2 {
@@ -897,6 +1580,18 @@ body.edit-mode #edit-gear-btn svg path {
     #extra-content-menu button {
         padding: 6px 12px;
         font-size: 0.9em;
+    }
+    
+
+    
+    /* Estilo para o botão de tarefas no dashboard - celulares pequenos */
+    .btn-tasks {
+        padding: 8px 12px;
+        font-size: 0.9em;
+        margin-top: 8px;
+        border-radius: 6px;
+        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+        min-height: 40px;
     }
     
     .modal-content {
@@ -979,7 +1674,11 @@ body.edit-mode #edit-gear-btn svg path {
     }
     
     #dashboard, #content-view {
+        width: 100%;
+        max-width: 100%;
         padding: 8px;
+        margin: 0 auto;
+        box-sizing: border-box;
     }
     
     #dashboard h2 {
@@ -1011,6 +1710,8 @@ body.edit-mode #edit-gear-btn svg path {
         right: 8px;
         min-width: 120px;
     }
+    
+
     
     #pizza-container {
         max-width: 200px;
@@ -1046,7 +1747,11 @@ body.edit-mode #edit-gear-btn svg path {
     }
     
     #dashboard, #content-view {
+        width: 100%;
+        max-width: 100%;
         padding: 12px;
+        margin: 0 auto;
+        box-sizing: border-box;
     }
     
     .fab {
@@ -1157,4 +1862,169 @@ body.edit-mode #edit-gear-btn svg path {
     #dashboard-disciplinas table {
         white-space: nowrap;
     }
+}
+
+.crud-modal.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.35);
+  z-index: 2147483647;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.crud-modal .modal-content {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+  padding: 32px 24px 24px 24px;
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+  z-index: 2147483647;
+}
+.crud-modal .close-btn {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  color: #222;
+  cursor: pointer;
+  z-index: 2147483647;
+}
+.status-pendente {
+  color: #fff;
+  background: #e53935;
+  animation: blink-pendente 1s steps(2, start) infinite;
+  font-weight: bold;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+@keyframes blink-pendente {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.status-andamento {
+  color: #fff;
+  background: #ff9800;
+  font-weight: bold;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.status-concluida {
+  color: #fff;
+  background: #43a047;
+  font-weight: bold;
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.alert-bell {
+  margin-left: 8px;
+  color: #ffeb3b;
+  font-size: 1.3em;
+  animation: bell-ring 0.7s infinite alternate, bell-blink 1s steps(2, start) infinite;
+  vertical-align: middle;
+  filter: drop-shadow(0 0 2px #ff9800);
+}
+@keyframes bell-ring {
+  0% { transform: rotate(-15deg); }
+  20% { transform: rotate(10deg); }
+  40% { transform: rotate(-8deg); }
+  60% { transform: rotate(8deg); }
+  80% { transform: rotate(-5deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes bell-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 10030;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-content.modal-tasks-content {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 32px 24px 24px 24px;
+  min-width: 320px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 10031;
+}
+.close-tasks-modal {
+  position: absolute;
+  top: 10px;
+  right: 16px;
+  font-size: 2em;
+  background: none;
+  border: none;
+  color: #222;
+  cursor: pointer;
+  z-index: 10032;
+}
+@media (max-width: 600px) {
+  .modal-content.modal-tasks-content {
+    padding: 16px 4vw 16px 4vw;
+    min-width: unset;
+  }
+}
+#disciplina-modal.modal-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  z-index: 10020;
+}
+#disciplina-modal.modal-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 10020;
+}
+
+/* Estilos para o modal de confirmação personalizado */
+.confirm-modal .modal-content {
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.confirm-btn:hover {
+  background: #c82333 !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3) !important;
+}
+
+.cancel-btn:hover {
+  background: #f8f9fa !important;
+  border-color: #adb5bd !important;
+  transform: scale(1.05) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
 }

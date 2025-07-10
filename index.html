@@ -20,20 +20,7 @@
         <div id="dashboard">
             <h2>Jornada do sucesso</h2>
             <div id="dashboard-disciplinas">
-                <table id="disciplinas-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Nome</th>
-                      <th>Data Início</th>
-                      <th>Situação</th>
-                      <th>Data Fim</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- As linhas serão inseridas via JS -->
-                  </tbody>
-                </table>
+                <!-- Os cards de disciplinas serão inseridos via JS -->
             </div>
             <button id="add-disciplina-btn" title="Adicionar Disciplina" class="fab">+</button>
             <div id="dashboard-infos"></div>
@@ -53,6 +40,7 @@
         <button id="menu-text-btn">📝 Texto</button>
         <button id="menu-video-btn">🎬 Vídeo</button>
         <button id="menu-practice-btn">🧪 Prática</button>
+        <button id="menu-tasks-btn">📋 Tarefas</button>
         <button id="menu-extra-btn">📚 Conteúdo Extra</button>
     </div>
 
@@ -68,6 +56,16 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="/js/index.js"></script>
-
+    <script src="/js/mobile-enhancements.js"></script>
+    <script>
+        const menuTasksBtn = document.getElementById('menu-tasks-btn');
+        if (menuTasksBtn) {
+            menuTasksBtn.onclick = () => {
+                if (window.appState && window.appState.currentDisciplinaId) {
+                    fetchTasks(window.appState.currentDisciplinaId);
+                }
+            };
+        }
+    </script>
 </body>
 </html>

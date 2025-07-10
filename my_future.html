@@ -19,6 +19,19 @@
             box-sizing: border-box;
             position: relative;
             overflow: hidden;
+            /* Melhorar para mobile */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Melhorias específicas para mobile */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+                min-height: 100vh;
+                /* Prevenir zoom */
+                touch-action: manipulation;
+            }
         }
 
         /* Efeito Matrix - Algoritmo Avançado */
@@ -426,7 +439,7 @@
                 height: 25px;
             }
         }
-        .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
             padding: 10px;
             margin-bottom: 15px;
@@ -437,6 +450,39 @@
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
             background-color: #fff;
             color: #333;
+            /* Melhorar para mobile */
+            min-height: 44px;
+        }
+        
+        /* Melhorias específicas para mobile nos formulários */
+        @media (max-width: 768px) {
+            .form-group input, .form-group select {
+                font-size: 16px; /* Evita zoom no iOS */
+                padding: 12px;
+                border-radius: 8px;
+                /* Melhorar feedback visual */
+                transition: all 0.2s ease;
+            }
+            
+            .form-group input:focus, .form-group select:focus {
+                border-color: #007bff;
+                box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+                transform: scale(1.02);
+            }
+            
+            .form-group button {
+                min-height: 48px;
+                font-size: 16px;
+                font-weight: 600;
+                border-radius: 8px;
+                /* Melhorar feedback visual */
+                transition: all 0.2s ease;
+            }
+            
+            .form-group button:active {
+                transform: scale(0.95);
+                background-color: #004085;
+            }
         }
 
         .form-group input:focus {
@@ -496,9 +542,6 @@
                 </div>
                 <div id="mensagem" style="margin-top:10px; color:#333;"></div>
             </form>
-            <div class="form-footer">
-                <!-- Texto de cadastro removido -->
-            </div>
         </div>
     </div>
     <script>
