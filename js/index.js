@@ -116,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
                      itemHtml = `
                         ${item.tipo ? `<span class="registro-title">${item.tipo}</span>` : ''}
                         ${item.texto ? `<p class="registro-text">${item.texto}</p>` : ''}
-                        ${item.link ? `<a href="${item.link}" target="_blank">🔗 Acessar Link</a>` : ''}
+                        ${item.link ? renderLinkEmbed(item.link) : ''}
                     `;
                     break;
             }
@@ -168,6 +168,81 @@ document.addEventListener('DOMContentLoaded', () => {
         return `<a href="${link}" target="_blank">${link}</a>`;
     }
 
+    // **NOVA FUNÇÃO** Renderiza embeds para diferentes tipos de links
+    function renderLinkEmbed(link) {
+        if (!link) return '';
+        
+        // YouTube
+        const ytMatch = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        if (ytMatch && ytMatch[1]) {
+            const videoId = ytMatch[1];
+            return `<div class="video-responsive"><iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe></div>`;
+        }
+        
+        // Google Drive (documentos, apresentações, planilhas)
+        const driveMatch = link.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9-_]+)/);
+        if (driveMatch && driveMatch[1]) {
+            const fileId = driveMatch[1];
+            return `<div class="video-responsive"><iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen></iframe></div>`;
+        }
+        
+        // Google Docs
+        const docsMatch = link.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9-_]+)/);
+        if (docsMatch && docsMatch[1]) {
+            const docId = docsMatch[1];
+            return `<div class="video-responsive"><iframe src="https://docs.google.com/document/d/${docId}/preview" allowfullscreen></iframe></div>`;
+        }
+        
+        // Google Slides
+        const slidesMatch = link.match(/docs\.google\.com\/presentation\/d\/([a-zA-Z0-9-_]+)/);
+        if (slidesMatch && slidesMatch[1]) {
+            const slideId = slidesMatch[1];
+            return `<div class="video-responsive"><iframe src="https://docs.google.com/presentation/d/${slideId}/embed" allowfullscreen></iframe></div>`;
+        }
+        
+        // Google Sheets
+        const sheetsMatch = link.match(/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+        if (sheetsMatch && sheetsMatch[1]) {
+            const sheetId = sheetsMatch[1];
+            return `<div class="video-responsive"><iframe src="https://docs.google.com/spreadsheets/d/${sheetId}/preview" allowfullscreen></iframe></div>`;
+        }
+        
+        // Vimeo
+        const vimeoMatch = link.match(/vimeo\.com\/(\d+)/);
+        if (vimeoMatch && vimeoMatch[1]) {
+            const videoId = vimeoMatch[1];
+            return `<div class="video-responsive"><iframe src="https://player.vimeo.com/video/${videoId}" allowfullscreen></iframe></div>`;
+        }
+        
+        // Dailymotion
+        const dailymotionMatch = link.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);
+        if (dailymotionMatch && dailymotionMatch[1]) {
+            const videoId = dailymotionMatch[1];
+            return `<div class="video-responsive"><iframe src="https://www.dailymotion.com/embed/video/${videoId}" allowfullscreen></iframe></div>`;
+        }
+        
+        // Twitch (clips)
+        const twitchMatch = link.match(/twitch\.tv\/\w+\/clip\/([a-zA-Z0-9-]+)/);
+        if (twitchMatch && twitchMatch[1]) {
+            const clipId = twitchMatch[1];
+            return `<div class="video-responsive"><iframe src="https://clips.twitch.tv/embed?clip=${clipId}" allowfullscreen></iframe></div>`;
+        }
+        
+        // PDF (se for um link direto para PDF)
+        if (link.toLowerCase().endsWith('.pdf')) {
+            return `<div class="video-responsive"><iframe src="${link}" allowfullscreen></iframe></div>`;
+        }
+        
+        // Imagens (jpg, jpeg, png, gif, webp)
+        const imageExtensions = /\.(jpg|jpeg|png|gif|webp)$/i;
+        if (imageExtensions.test(link)) {
+            return `<div class="image-responsive"><img src="${link}" alt="Imagem" class="registro-img" style="max-width:100%; height:auto; border-radius:8px;"></div>`;
+        }
+        
+        // Se não for nenhum dos tipos suportados, mostra como link normal
+        return `<a href="${link}" target="_blank" class="link-fallback">🔗 ${link}</a>`;
+    }
+
     // Função para buscar e exibir conteúdo extra de uma disciplina, no padrão de cards
     async function fetchExtraContent(disciplinaId) {
         elements.contentView.innerHTML = `<div style='text-align:center; padding: 40px;'>Carregando...</div>`;
@@ -204,18 +279,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span class='registro-text'>${item.link_or_text}</span>
                 `;
             } else if (item.tipo_arquivo === 'Vídeo') {
-                const ytMatch = item.link_or_text && item.link_or_text.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-                if (ytMatch && ytMatch[1]) {
-                    itemHtml = `
-                        ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
-                        <div class='video-responsive'><iframe src='https://www.youtube.com/embed/${ytMatch[1]}' allowfullscreen></iframe></div>
-                    `;
-                } else {
-                    itemHtml = `
-                        ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
-                        <a href='${item.link_or_text}' target='_blank'>${item.link_or_text}</a>
-                    `;
-                }
+                itemHtml = `
+                    ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}
+                    ${renderLinkEmbed(item.link_or_text)}
+                `;
             } else if (item.tipo_arquivo === 'Imagem') {
                 itemHtml = `
                     ${item.title ? `<span class='registro-title'>${item.title}</span>` : ''}

@@ -175,6 +175,37 @@ main {
     margin-top: 6px;
 }
 
+.link-fallback {
+    background: var(--light-bg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-decoration: none;
+    border: 1px solid #ddd;
+    transition: all 0.2s;
+}
+
+.link-fallback:hover {
+    background: var(--primary-color);
+    color: var(--white) !important;
+    border-color: var(--primary-color);
+}
+
+/* Imagens Responsivas */
+.image-responsive {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    margin: 24px auto;
+    text-align: center;
+}
+
+.image-responsive img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
 /* Toolbar de Edição (CRUD) */
 .registro-toolbar {
     display: flex;
