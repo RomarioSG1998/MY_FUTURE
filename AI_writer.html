@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ferramenta de Parafraseamento IA (Nível Especialista)</title>
+    
+    <script type="module" src="https://esm.run/@google/generative-ai"></script>
+    
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #f8f9fa;
+            --text-color: #343a40;
+            --border-color: #dee2e6;
+            --background-color: #ffffff;
+            --success-color: #28a745;
+            --error-color: #dc3545;
+        }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--secondary-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { width: 100%; max-width: 1200px; background-color: var(--background-color); border-radius: 12px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); padding: 30px; box-sizing: border-box; }
+        header { text-align: center; margin-bottom: 30px; border-bottom: 1px solid var(--border-color); padding-bottom: 20px; }
+        header h1 { font-size: 2.5rem; color: var(--primary-color); margin: 0; }
+        main { display: grid; grid-template-columns: 1fr auto 1fr; gap: 20px; align-items: center; }
+        .text-area-container { display: flex; flex-direction: column; }
+        label { font-weight: 500; margin-bottom: 8px; font-size: 1rem; }
+        textarea { width: 100%; height: 400px; border: 1px solid var(--border-color); border-radius: 8px; padding: 15px; font-size: 1rem; font-family: inherit; resize: vertical; box-sizing: border-box; transition: border-color 0.3s, box-shadow 0.3s; }
+        textarea:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25); }
+        textarea#outputText { background-color: #f1f3f5; }
+        .controls { display: flex; justify-content: center; align-items: center; }
+        #paraphraseBtn { display: flex; align-items: center; gap: 10px; padding: 15px 30px; font-size: 1.1rem; font-weight: 700; color: #fff; background-color: var(--primary-color); border: none; border-radius: 50px; cursor: pointer; transition: background-color 0.3s, transform 0.2s; }
+        #paraphraseBtn:hover { background-color: #0056b3; transform: translateY(-2px); }
+        #paraphraseBtn:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .status-message { margin-top: 10px; font-weight: 500; min-height: 20px; }
+        footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.9rem; color: #6c757d; }
+        @media (max-width: 992px) { main { grid-template-columns: 1fr; } .controls { transform: rotate(90deg); margin: 20px 0; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Ferramenta de Parafraseamento IA</h1>
+            <p>Cole seu texto abaixo para uma transmutação para o estilo de autoria humana.</p>
+        </header>
+        <main>
+            <div class="text-area-container">
+                <label for="inputText">Texto Original</label>
+                <textarea id="inputText" placeholder="Cole seu texto aqui..."></textarea>
+            </div>
+            <div class="controls">
+                <button id="paraphraseBtn">
+                    Humanizar
+                </button>
+            </div>
+            <div class="text-area-container">
+                <label for="outputText">Texto Humanizado</label>
+                <textarea id="outputText" placeholder="O resultado aparecerá aqui..." readonly></textarea>
+                <div id="status" class="status-message"></div>
+            </div>
+        </main>
+        <footer>
+            <p>&copy; 2025 - Construído com Tecnologia de Ponta</p>
+        </footer>
+    </div>
+
+    <script>
+        let geminiApiKey = 'AIzaSyAI-H7rdl-aPkxFJZn9FU6hrLlMKVG96ro'; // Substitua pela sua chave real
+
+        async function callParaphraseAPI(text) {
+            
+            if (!geminiApiKey || geminiApiKey === 'SUA_CHAVE_DE_API_VAI_AQUI') {
+                throw new Error("A chave da API (geminiApiKey) não foi configurada no código.");
+            }
+            
+            const prompt = `
+Atue como um ghostwriter acadêmico de elite, um mestre da retórica e da prosa científica, cuja única missão é transmutar um texto para que ele tenha a textura, o ritmo e as idiossincrasias inconfundíveis da autoria humana. Seu principal objetivo é produzir um texto que seja classificado como 100% humano por sistemas de detecção de IA (GPTZero, Turnitin AI, etc.).
+
+Para alcançar isso, você deve primeiro entender COMO os detectores funcionam. Eles procuram por:
+-   **Baixa Perplexidade:** Escolhas de palavras muito previsíveis e comuns para um modelo de linguagem.
+-   **Baixa Variabilidade ("Burstiness"):** Frases com comprimentos e estruturas muito uniformes.
+-   **Perfeição Excessiva:** Transições lógicas e gramática impecáveis, sem as pequenas "imperfeições" estilísticas que marcam a escrita humana.
+
+**Sua tarefa é ativamente combater esses padrões.**
+
+**Observe o exemplo a seguir para entender a transmutação necessária:**
+
+**Texto Original Simples:**
+"A internet permite que as pessoas trabalhem de casa. Isso aumentou a flexibilidade, mas também borrou a linha entre vida profissional e pessoal."
+
+**Exemplo a ser EVITADO (Estilo IA Detectável):**
+"A internet possibilitou o trabalho remoto para os indivíduos. Consequentemente, isso resultou em um aumento da flexibilidade, embora tenha simultaneamente ofuscado a distinção entre as esferas profissional e pessoal."
+*(Análise: Previsível, usa conectivos óbvios como "Consequentemente" e "simultaneamente", estrutura de frase padrão).*
+
+**Exemplo a ser ALCANÇADO (Estilo Humano, Acadêmico):**
+"A ascensão do trabalho remoto, impulsionada pela infraestrutura da internet, representa uma faca de dois gumes. Se por um lado a flexibilidade laboral foi amplificada, por outro, a fronteira entre o domínio profissional e a vida pessoal tornou-se perigosamente fluida."
+*(Análise: Estrutura mais complexa e variada, uso de metáfora ("faca de dois gumes"), vocabulário preciso ("amplificada", "domínio", "fluida"), ritmo menos uniforme).*
+
+**AGORA, APLIQUE ESSA FILOSOFIA AO TEXTO ABAIXO, SEGUINDO ESTAS REGRAS DE OURO:**
+
+1.  **Ritmo e Textura Humana:** Varie drasticamente o comprimento e a estrutura das frases. Misture sentenças curtas e incisivas com períodos mais longos e elaborados. Comece frases com diferentes classes de palavras (sujeitos, advérbios, orações subordinadas).
+2.  **Introduza 'Imperfeições' Controladas:** A escrita humana não é estéril. Use conjunções de partida (e.g., 'Mas', 'E', 'Ora') com extrema parcimônia, como um autor humano faria para criar ênfase. Evite a "perfeição" robótica.
+3.  **Léxico Imprevisível:** Evite os sinônimos mais óbvios. Procure palavras que, embora precisas, não sejam a primeira escolha de um modelo de linguagem. Pense em textura e conotação, não apenas em significado.
+4.  **FIDELIDADE SEMÂNTICA TOTAL:** A essência, os dados e os argumentos do texto original são sagrados. Não altere o significado de forma alguma.
+5.  **ZERO MARCADORES DE IA:** Sem introduções, sem conclusões, sem metalinguagem. Apenas o texto transmutado.
+
+**Texto Original:**
+"""
+${text}
+"""
+
+**Texto Acadêmico Transmutado (Indetectável):**
+`;
+
+            try {
+                const { GoogleGenerativeAI } = await import('https://esm.run/@google/generative-ai');
+                const genAI = new GoogleGenerativeAI(geminiApiKey);
+                
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                
+                return response.text();
+
+            } catch (error) {
+                console.error("Erro detalhado na chamada da API do Gemini:", error);
+                throw new Error("Falha ao comunicar com a IA. Verifique sua chave de API e a conexão.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const paraphraseBtn = document.getElementById('paraphraseBtn');
+            const inputText = document.getElementById('inputText');
+            const outputText = document.getElementById('outputText');
+            const statusMessage = document.getElementById('status');
+
+            paraphraseBtn.addEventListener('click', async () => {
+                const text = inputText.value.trim();
+
+                if (!text) {
+                    statusMessage.textContent = "Por favor, insira um texto.";
+                    statusMessage.style.color = "var(--error-color)";
+                    return;
+                }
+
+                paraphraseBtn.disabled = true;
+                statusMessage.textContent = "Transmutando o texto... aguarde...";
+                statusMessage.style.color = "var(--primary-color)";
+                outputText.value = "";
+
+                try {
+                    const result = await callParaphraseAPI(text);
+                    outputText.value = result.trim();
+                    statusMessage.textContent = "Texto humanizado com sucesso!";
+                    statusMessage.style.color = "var(--success-color)";
+                } catch (error) {
+                    statusMessage.textContent = `Erro: ${error.message}`;
+                    statusMessage.style.color = "var(--error-color)";
+                    console.error(error);
+                } finally {
+                    paraphraseBtn.disabled = false;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
