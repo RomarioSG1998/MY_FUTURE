@@ -25,20 +25,48 @@
         --border-radius: var(--mobile-border-radius);
     }
     
-    /* Prevenir zoom em inputs no iOS */
+    /* Otimizar inputs para mobile e teclado virtual */
     input, textarea, select {
-        font-size: var(--mobile-font-size) !important;
+        font-size: 16px !important;
+        padding: 12px;
+        margin: 0;
+        border-radius: var(--mobile-border-radius);
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        max-height: 44px;
+    }
+
+    textarea {
+        max-height: none !important;
     }
     
-    /* Melhorar scroll suave */
+    /* Ajustes para viewport mobile */
     html {
         scroll-behavior: smooth;
         -webkit-overflow-scrolling: touch;
+        height: -webkit-fill-available;
+        height: 100%;
         /* Prevenir scroll horizontal */
         overflow-x: hidden;
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
+    }
+    
+    /* Ajuste para quando o teclado está visível */
+    .keyboard-visible {
+        position: relative !important;
+        height: auto !important;
+        min-height: 100%;
+    }
+    
+    /* Ajuste para modais quando o teclado está visível */
+    .keyboard-visible .modal-content {
+        position: absolute;
+        top: 0;
+        height: auto;
+        min-height: 100vh;
     }
     
     /* Otimizar para touch */
@@ -847,6 +875,355 @@ body.edit-mode #edit-gear-btn svg path {
 .btn-tasks.has-pending:hover {
     background: linear-gradient(135deg, #ff5252 0%, #e74c3c 100%);
     box-shadow: 0 4px 12px rgba(255, 107, 107, 0.5);
+}
+
+/* ===== MELHORIAS GERAIS PARA RESPONSIVIDADE ===== */
+
+/* Otimizações de Performance */
+.optimized-animation {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Otimizações para Dispositivos Touch */
+@media (hover: none) and (pointer: coarse) {
+    /* Aumentar área de toque para elementos interativos */
+    a, button, .card-disciplina, .fab {
+        min-height: var(--mobile-touch-target);
+        padding: 8px;
+        margin: 4px;
+    }
+
+    /* Feedback visual para toque */
+    .btn-tasks:active,
+    .fab:active,
+    .crud-btn:active,
+    .card-disciplina:active {
+        transform: scale(0.97);
+        opacity: 0.8;
+    }
+}
+
+/* Ajustes específicos para landscape */
+@media (max-width: 768px) and (orientation: landscape) {
+    .fab {
+        position: fixed;
+        right: 8px;
+    }
+    
+    #edit-gear-btn { bottom: 8px; }
+    #extra-content-btn { bottom: 64px; }
+    #add-disciplina-btn { bottom: 120px; }
+    #ai-writer-btn { bottom: 176px; }
+
+    /* Ajustar layout para melhor visualização */
+    main {
+        padding-top: 60px;
+        padding-bottom: 80px;
+    }
+
+    .modal-content {
+        max-height: 80vh;
+    }
+}
+
+/* Melhorias específicas para telas pequenas */
+@media (max-width: 480px) {
+    /* Ajustar tamanho de fonte */
+    body { font-size: 14px; }
+    
+    /* Simplificar tabelas */
+    .crud-table th:not(:first-child):not(:last-child),
+    .crud-table td:not(:first-child):not(:last-child) {
+        display: none;
+    }
+
+    /* Otimizar botões */
+    .fab {
+        width: 48px;
+        height: 48px;
+    }
+
+    /* Melhorar espaçamento */
+    .card-disciplina {
+        margin: 4px 0;
+        padding: 12px;
+    }
+}
+
+/* Melhorias de acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+.touch-device .button,
+.touch-device .fab,
+.touch-device .card-disciplina {
+    cursor: default;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ===== MELHORIAS DO MODAL DE DISCIPLINAS ===== */
+
+/* Estrutura base do modal */
+#disciplina-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    width: 90vw;
+    max-width: 800px;
+    max-height: 90vh;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    position: relative;
+}
+
+/* Cabeçalho fixo */
+#disciplina-modal .modal-header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 10;
+    padding: 16px;
+    border-bottom: 1px solid #eee;
+    border-radius: 12px 12px 0 0;
+}
+
+#disciplina-modal .header-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+#disciplina-modal h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--dark-text);
+}
+
+/* Botão de adicionar disciplina */
+#disciplina-modal #add-new-disciplina-modal {
+    padding: 8px 16px;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+/* Botão de fechar */
+#disciplina-modal .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 1.5em;
+    color: var(--dark-text);
+    cursor: pointer;
+    padding: 4px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+}
+
+/* Área de conteúdo rolável */
+#disciplina-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+}
+
+#pizza-container {
+    margin-bottom: 24px;
+    flex-shrink: 0;
+}
+
+#registros-container {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* Estilos específicos para a tabela de tarefas */
+.crud-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+
+.crud-table th,
+.crud-table td {
+    padding: 12px 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.crud-table th {
+    background: #f8f9fa;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Melhorar visualização em dispositivos móveis */
+@media (max-width: 768px) {
+    .crud-table {
+        font-size: 14px;
+    }
+
+    .crud-table th,
+    .crud-table td {
+        padding: 8px 4px;
+    }
+
+    .crud-table td:last-child {
+        padding-right: 8px;
+    }
+
+    /* Melhorar área de toque para botões na tabela */
+    .crud-table button {
+        min-width: var(--mobile-touch-target);
+        min-height: var(--mobile-touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 8px;
+        margin: 2px;
+    }
+}
+
+/* Responsividade para mobile */
+@media (max-width: 768px) {
+    #disciplina-modal .modal-content {
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+        margin: 0;
+        overflow: hidden; /* Prevenir scroll duplo */
+    }
+
+    #disciplina-modal .modal-header {
+        padding: 12px;
+        border-radius: 0;
+        flex-shrink: 0; /* Impedir que o header encolha */
+    }
+
+    #disciplina-modal h2 {
+        font-size: 1.2rem;
+    }
+
+    #disciplina-modal #add-new-disciplina-modal {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+    }
+
+    #disciplina-modal .close-btn {
+        top: 12px;
+        right: 12px;
+    }
+
+    #disciplina-modal .modal-body {
+        padding: 12px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        flex: 1; /* Ocupar espaço restante */
+        display: flex;
+        flex-direction: column;
+    }
+
+    #pizza-container {
+        margin-bottom: 16px;
+        flex-shrink: 0; /* Impedir que o gráfico encolha */
+    }
+
+    /* Ajustes específicos para a tabela de tarefas */
+    #registros-container {
+        flex: 1; /* Ocupar espaço restante */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 16px;
+        padding-bottom: 80px;
+    }
+
+    /* Estilos da tabela dentro do modal */
+    .crud-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 8px;
+    }
+
+    .crud-table th,
+    .crud-table td {
+        padding: 8px;
+        text-align: left;
+        font-size: 14px;
+        border-bottom: 1px solid #eee;
+    }
+
+    .crud-table th {
+        background: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+    /* Garantir que os botões de ação na tabela sejam clicáveis */
+    .crud-table td:last-child {
+        white-space: nowrap;
+        padding: 4px;
+    }
+
+    .crud-table button {
+        min-width: var(--mobile-touch-target);
+        min-height: var(--mobile-touch-target);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: 2px;
+    }
+}
+
+/* Modal Genérico - Melhorado para mobile */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.6);
+    z-index: 4000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--mobile-spacing);
+    box-sizing: border-box;
 }
 
 /* Modal Genérico - Melhorado para mobile */
@@ -2058,14 +2435,244 @@ body.edit-mode #edit-gear-btn svg path {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0);
     z-index: 2000;
     display: none;
     align-items: center;
     justify-content: center;
-    overflow-y: auto; /* Permite rolagem */
+    opacity: 0;
+    transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+#ai-writer-modal.modal-overlay.show {
+    background: rgba(0,0,0,0.75);
+    opacity: 1;
+}
+
+#ai-writer-modal .modal-content {
+    background: #fff;
+    width: 90vw;
+    height: 90vh;
+    max-width: 1200px;
+    border-radius: 12px;
+    position: relative;
+    margin: 20px auto;
+    overflow: hidden;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+#ai-writer-modal.show .modal-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+#ai-writer-modal .close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    z-index: 2001;
+    background: #fff;
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #dc3545;
+    transition: all 0.2s ease;
+}
+
+#ai-writer-modal .close-btn:hover {
+    transform: scale(1.1);
+    background: #dc3545;
+    color: #fff;
+}
+
+#ai-writer-modal .content-container {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+}
+
+#ai-writer-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 12px;
+}
+
+/* Estilos específicos para modais CRUD */
+.crud-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.crud-modal .modal-header {
+    position: sticky;
+    top: 0;
+    background: #fff;
+    padding: 16px 24px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    gap: 16px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.crud-modal .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.crud-modal .add-new-button {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.crud-modal .add-new-button:hover {
+    background: #1565c0;
+}
+
+.crud-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+}
+
+.crud-modal form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.crud-modal h3 {
+    margin: 0;
+    font-size: 1.5em;
+    color: #333;
+}
+
+.crud-modal input,
+.crud-modal textarea,
+.crud-modal select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.crud-modal textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.crud-modal .action-buttons {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 16px 24px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    z-index: 1;
+}
+
+.crud-modal button[type="submit"],
+.crud-modal .add-button {
+    background: #1976d2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.crud-modal button[type="submit"]:hover,
+.crud-modal .add-button:hover {
+    background: #1565c0;
+}
+
+/* Melhorias para mobile */
+@media (max-width: 768px) {
+    .crud-modal .modal-content {
+        height: 100%;
+        max-height: -webkit-fill-available;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    .crud-modal input,
+    .crud-modal textarea,
+    .crud-modal select {
+        font-size: 16px;
+        padding: 12px;
+        margin-bottom: 16px;
+        border: 1px solid #ddd;
+        border-radius: var(--mobile-border-radius);
+        -webkit-appearance: none;
+        appearance: none;
+    }
+    
+    .crud-modal .modal-body {
+        padding: 16px;
+        flex: 1;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .crud-modal .action-buttons {
+        padding: 12px;
+        position: sticky;
+        bottom: 0;
+        background: white;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .crud-modal button[type="submit"],
+    .crud-modal .add-button {
+        padding: 12px 20px;
+        min-height: 44px;
+        width: 100%;
+        margin: 0;
+    }
+
+    /* Ajustes para modais em mobile com teclado visível */
+    .keyboard-visible .modal-content {
+        position: absolute;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    #ai-writer-modal .modal-content {
+        margin: 0;
+        width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+    }
 }
 
 #ai-writer-modal .modal-content {

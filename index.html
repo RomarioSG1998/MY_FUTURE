@@ -59,26 +59,33 @@
 
     <div id="disciplina-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <button id="close-modal-disciplina" class="close-btn">&times;</button>
-            <h2>Disciplinas</h2>
-            <div id="pizza-container"></div>
+            <div class="modal-header">
+                <div class="header-actions">
+                    <h2>Disciplinas</h2>
+                    <button id="add-new-disciplina-modal">➕ Nova Disciplina</button>
+                </div>
+                <button id="close-modal-disciplina" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="pizza-container"></div>
+                <div id="registros-container"></div>
+            </div>
         </div>
     </div>
 
     <div id="crud-modal-root"></div>
     <!-- Modal para AI Writer -->
-    <div id="ai-writer-modal" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:2000; display:none; align-items:center; justify-content:center;">
-        <div class="modal-content" style="background:#fff; width:90vw; height:90vh; max-width:1200px; border-radius:12px; position:relative; margin:20px auto; overflow:hidden;">
-            <button id="close-ai-writer-modal" class="close-btn" style="position:absolute; top:15px; right:15px; z-index:2001; background:#fff; width:40px; height:40px; border:none; border-radius:50%; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.2); font-size:24px; display:flex; align-items:center; justify-content:center; color:#dc3545; transition:all 0.2s ease;">&times;</button>
-            <div style="width:100%; height:100%; overflow:auto;">
-                <iframe id="ai-writer-iframe" src="" style="width:100%; height:100%; border:none; border-radius:12px;"></iframe>
+    <div id="ai-writer-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-ai-writer-modal" class="close-btn">&times;</button>
+            <div class="content-container">
+                <iframe id="ai-writer-iframe" src=""></iframe>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
     <script src="js/index.js"></script>
-    <script src="js/mobile-enhancements.js"></script>
     <!-- Removido o script inline do modal do robô, agora será feito em um arquivo JS separado -->
 </body>
 </html>

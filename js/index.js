@@ -30,13 +30,22 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
 
     const modalHtml = `
         <div class="modal-overlay crud-modal" style="z-index: 2147483647 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
-            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 32px 24px 24px 24px; max-width: 400px; width: 100%; position: relative;">
-                <button class="close-btn" style="z-index: 2147483647 !important; position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">×</button>
-                <h3>${title}</h3>
-                <form>
-                    ${fieldsHtml}
-                    <button type="submit">Salvar</button>
-                </form>
+            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 400px; width: 100%; position: relative;">
+                <div class="modal-header" style="position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;">
+                    <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0;">${title}</h3>
+                        <button class="add-new-button" style="padding: 8px 16px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;">➕ Adicionar Novo</button>
+                    </div>
+                    <button class="close-btn" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">×</button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        ${fieldsHtml}
+                        <div class="action-buttons">
+                            <button type="submit">Salvar</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>`;
 
@@ -57,6 +66,17 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
     modalOverlay.querySelector('.close-btn').onclick = () => {
         crudModalRoot.innerHTML = '';
     };
+
+    // Manipulador do botão "Adicionar Novo"
+    const addNewButton = modalOverlay.querySelector('.add-new-button');
+    if (addNewButton) {
+        addNewButton.onclick = () => {
+            // Limpa o formulário
+            form.reset();
+            // Rola para o topo do modal
+            modalOverlay.querySelector('.modal-body').scrollTop = 0;
+        };
+    }
 
     form.onsubmit = async (e) => {
         e.preventDefault();
@@ -526,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { value: 'Texto', label: 'Texto' },
                     { value: 'Vídeo', label: 'Vídeo' },
                     { value: 'Imagem', label: 'Imagem' }
-                ], placeholder: 'Tipo do Arquivo' },
+                ], placeholder: 'Tipo do Arquivo', headerFixed: true },
                 { name: 'title', type: 'text', placeholder: 'Título' },
                 { name: 'link_or_text', type: 'text', placeholder: 'Link, texto ou URL da imagem' }
             ],
@@ -994,34 +1014,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Funções CRUD globais para tarefas (fora do modal)
-    async function handleCreateTask(disciplinaId) {
-        const userId = localStorage.getItem('user_id');
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const todayStr = `${yyyy}-${mm}-${dd}`;
-        createCrudModal({
-            title: 'Nova Tarefa',
-            formFields: getCrudConfig('tasks').fields,
-            initialData: { id_disciplina: disciplinaId, id_usuario: userId, data_inicio: todayStr },
-            onSubmit: async (data) => {
-                if (!data.nome || !data.data_fim || !data.situacao) {
-                    alert('Preencha todos os campos obrigatórios.');
-                    return;
-                }
-                await supabase.from('tasks').insert([{
-                    id_disciplina: disciplinaId,
-                    id_usuario: userId,
-                    data_inicio: todayStr,
-                    data_fim: data.data_fim,
-                    situacao: data.situacao,
-                    nome: data.nome
-                }]);
-                await fetchTasks(disciplinaId);
-            }
-        });
-    }
     async function handleEditTask(id, disciplinaId) {
         const { data: item, error } = await supabase.from('tasks').select('*').eq('id', id).single();
         if (error) return alert('Erro ao buscar tarefa para edição.');
@@ -1166,17 +1158,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lógica do Modal do AI Writer
     if (elements.aiWriterBtn) {
         elements.aiWriterBtn.addEventListener('click', () => {
-            console.log('AI Writer button clicked'); // Debug
             elements.aiWriterModal.style.display = 'flex';
+            elements.aiWriterModal.classList.add('show');
             elements.aiWriterIframe.src = './AI_writer.html';
+            // Forçar reflow para garantir que a animação funcione
+            void elements.aiWriterModal.offsetWidth;
         });
     }
 
     if (elements.closeAiWriterModal) {
         elements.closeAiWriterModal.addEventListener('click', () => {
-            console.log('Close button clicked'); // Debug
-            elements.aiWriterModal.style.display = 'none';
-            elements.aiWriterIframe.src = '';
+            elements.aiWriterModal.classList.remove('show');
+            setTimeout(() => {
+                elements.aiWriterModal.style.display = 'none';
+                elements.aiWriterIframe.src = '';
+            }, 200); // Tempo para a animação completar
         });
     }
 
@@ -1184,9 +1180,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elements.aiWriterModal) {
         elements.aiWriterModal.addEventListener('click', (e) => {
             if (e.target === elements.aiWriterModal) {
-                console.log('Outside modal clicked'); // Debug
-                elements.aiWriterModal.style.display = 'none';
-                elements.aiWriterIframe.src = '';
+                elements.aiWriterModal.classList.remove('show');
+                setTimeout(() => {
+                    elements.aiWriterModal.style.display = 'none';
+                    elements.aiWriterIframe.src = '';
+                }, 200); // Tempo para a animação completar
             }
         });
     }
@@ -1233,11 +1231,23 @@ function openTasksModal(disciplinaId) {
     modal.setAttribute('data-modal', 'tasks');
     modal.innerHTML = `
         <div class="modal-content modal-tasks-content">
-            <button class="close-btn close-tasks-modal" style="position:absolute;top:10px;right:16px;font-size:2em;background:none;border:none;cursor:pointer;">×</button>
+            <div class="modal-header" style="position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;">
+                <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">Tarefas</h3>
+                    <button class="add-new-task-button" style="padding: 8px 16px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;">➕ Adicionar Nova Tarefa</button>
+                </div>
+                <button class="close-btn close-tasks-modal" style="position:absolute;top:16px;right:16px;font-size:1.5em;background:none;border:none;cursor:pointer;">×</button>
+            </div>
             <div id="tasks-modal-table">Carregando tarefas...</div>
         </div>
     `;
     document.body.appendChild(modal);
+    
+    // Adiciona evento ao botão de nova tarefa
+    const addTaskButton = modal.querySelector('.add-new-task-button');
+    if (addTaskButton) {
+        addTaskButton.onclick = () => handleCreateTask(disciplinaId);
+    }
     
     setTimeout(() => modal.classList.add('show'), 10);
     
@@ -1432,5 +1442,35 @@ function handleDeleteTaskModal(id, disciplinaId, container) {
         supabase.from('tasks').delete().eq('id', id).then(() => {
             fetchTasksForModal(disciplinaId, container);
         });
+    });
+}
+
+// Movendo função handleCreateTask para o escopo global
+async function handleCreateTask(disciplinaId) {
+    const userId = localStorage.getItem('user_id');
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    createCrudModal({
+        title: 'Nova Tarefa',
+        formFields: getCrudConfig('tasks').fields,
+        initialData: { id_disciplina: disciplinaId, id_usuario: userId, data_inicio: todayStr },
+        onSubmit: async (data) => {
+            if (!data.nome || !data.data_fim || !data.situacao) {
+                alert('Preencha todos os campos obrigatórios.');
+                return;
+            }
+            await supabase.from('tasks').insert([{
+                id_disciplina: disciplinaId,
+                id_usuario: userId,
+                data_inicio: todayStr,
+                data_fim: data.data_fim,
+                situacao: data.situacao,
+                nome: data.nome
+            }]);
+            await fetchTasksForModal(disciplinaId, document.querySelector('#tasks-modal-table'));
+        }
     });
 }
