@@ -64,6 +64,16 @@
     </div>
 
     <script>
+        // Função para proteger a página
+        function protectPage() {
+            if (!localStorage.getItem('user_id')) {
+                window.location.href = 'my_future.html';
+            }
+        }
+
+        // Verifica login ao carregar a página
+        protectPage();
+
         let geminiApiKey = 'AIzaSyAI-H7rdl-aPkxFJZn9FU6hrLlMKVG96ro'; // Substitua pela sua chave real
 
         async function callParaphraseAPI(text) {

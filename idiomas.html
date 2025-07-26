@@ -13,7 +13,6 @@
         <button id="hacker-btn" title="Ver Disciplinas">
             <img src="./imagens/iconehacker.webp" alt="Ícone Hacker">
         </button>
-        <button id="logout-btn">Sair</button>
     </header>
 
     <main>
@@ -22,20 +21,7 @@
             <div id="dashboard-disciplinas">
                 <!-- Os cards de disciplinas serão inseridos via JS -->
             </div>
-            <!-- Botão de robô flutuante alinhado com os outros -->
-            <button id="ai-writer-btn" title="Ferramenta IA" class="fab">
-                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                    <rect x="8" y="8" width="8" height="8" rx="2" fill="currentColor"/>
-                    <circle cx="10" cy="12" r="1" fill="var(--primary-color)"/>
-                    <circle cx="14" cy="12" r="1" fill="var(--primary-color)"/>
-                </svg>
-            </button>
             <button id="add-disciplina-btn" title="Adicionar Disciplina" class="fab">+</button>
-            <!-- Botão de idioma inglês flutuante -->
-            <button id="english-flag-btn" title="Mudar para Inglês" class="fab" style="bottom: 92px; right: 24px; position: fixed; z-index: 1000;">
-                <img src="https://upload.wikimedia.org/wikipedia/en/a/ae/Flag_of_the_United_Kingdom.svg" alt="Bandeira da Inglaterra" style="width:32px;height:32px;vertical-align:middle;">
-            </button>
             <div id="dashboard-infos"></div>
         </div>
 
@@ -66,19 +52,19 @@
     </div>
 
     <div id="crud-modal-root"></div>
-    <!-- Modal para AI Writer -->
-    <div id="ai-writer-modal" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.75); z-index:2000; display:none; align-items:center; justify-content:center;">
-        <div class="modal-content" style="background:#fff; width:90vw; height:90vh; max-width:1200px; border-radius:12px; position:relative; margin:20px auto; overflow:hidden;">
-            <button id="close-ai-writer-modal" class="close-btn" style="position:absolute; top:15px; right:15px; z-index:2001; background:#fff; width:40px; height:40px; border:none; border-radius:50%; cursor:pointer; box-shadow:0 2px 8px rgba(0,0,0,0.2); font-size:24px; display:flex; align-items:center; justify-content:center; color:#dc3545; transition:all 0.2s ease;">&times;</button>
-            <div style="width:100%; height:100%; overflow:auto;">
-                <iframe id="ai-writer-iframe" src="" style="width:100%; height:100%; border:none; border-radius:12px;"></iframe>
-            </div>
-        </div>
-    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script src="js/index.js"></script>
-    <script src="js/mobile-enhancements.js"></script>
-    <!-- Removido o script inline do modal do robô, agora será feito em um arquivo JS separado -->
+    <script src="/js/idiomas.js"></script>
+    <script src="/js/mobile-enhancements.js"></script>
+    <script>
+        const menuTasksBtn = document.getElementById('menu-tasks-btn');
+        if (menuTasksBtn) {
+            menuTasksBtn.onclick = () => {
+                if (window.appState && window.appState.currentDisciplinaId) {
+                    fetchTasks(window.appState.currentDisciplinaId);
+                }
+            };
+        }
+    </script>
 </body>
 </html>

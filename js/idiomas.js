@@ -31,7 +31,7 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
     const modalHtml = `
         <div class="modal-overlay crud-modal" style="z-index: 2147483647 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
             <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 32px 24px 24px 24px; max-width: 400px; width: 100%; position: relative;">
-                <button class="close-btn" style="z-index: 2147483647 !important; position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">×</button>
+                <button class="close-btn" style="z-index: 2147483647 !important; position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">&times;</button>
                 <h3>${title}</h3>
                 <form>
                     ${fieldsHtml}
@@ -203,17 +203,10 @@ document.addEventListener('DOMContentLoaded', () => {
         menuTextBtn: document.getElementById('menu-text-btn'),
         menuVideoBtn: document.getElementById('menu-video-btn'),
         menuPracticeBtn: document.getElementById('menu-practice-btn'),
-        menuExtraBtn: document.getElementById('menu-extra-btn'),
         disciplinaModal: document.getElementById('disciplina-modal'),
         closeDisciplinaModalBtn: document.getElementById('close-modal-disciplina'),
         pizzaContainer: document.getElementById('pizza-container'),
         crudModalRoot: document.getElementById('crud-modal-root'),
-        addDisciplinaBtn: document.getElementById('add-disciplina-btn'),
-        englishFlagBtn: document.getElementById('english-flag-btn'),
-        aiWriterBtn: document.getElementById('ai-writer-btn'),
-        aiWriterModal: document.getElementById('ai-writer-modal'),
-        closeAiWriterModal: document.getElementById('close-ai-writer-modal'),
-        aiWriterIframe: document.getElementById('ai-writer-iframe')
     };
 
     // --- GERENCIAMENTO DE ESTADO ---
@@ -276,7 +269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!currentContent || currentContent.length === 0) {
             elements.contentView.innerHTML = `
-                <button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>
+                <button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>
                 <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
                     Ainda não há conteúdo de ${currentContentType} para esta disciplina.
                 </div>
@@ -290,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
+        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>`;
         currentContent.forEach(item => {
             let itemHtml = '';
             switch(currentContentType) {
@@ -448,7 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para renderizar Conteúdo Extra como cards, igual às outras seções
     function renderExtraContentCards(data, isEditMode, idDisciplina) {
-        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
+        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>`;
         if (!data || data.length === 0) {
             contentHtml += `
                 <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
@@ -707,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const diff = (fim - hoje) / (1000 * 60 * 60 * 24);
             return diff <= 10 && diff >= 0;
         }
-        let html = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
+        let html = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>`;
         const isEditMode = appState.isEditMode;
         const disciplinaId = appState.currentDisciplinaId;
         if (!tasks || tasks.length === 0) {
@@ -742,7 +735,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td>${task.data_fim || ''}</td>
                             <td class="task-status ${task.situacao === 'pendente' ? 'status-pendente' : task.situacao === 'em andamento' ? 'status-andamento' : task.situacao === 'concluída' ? 'status-concluida' : ''}">
                                 ${task.situacao || ''}
-                                ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">🔔</span>' : ''}
+                                ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">&#128276;</span>' : ''}
                             </td>
                             ${isEditMode ? `<td>
                                 <button class='edit-task-btn' data-id='${task.id}'>✏️</button>
@@ -909,13 +902,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function deleteDisciplina(id) {
-        showConfirmModal('Tem certeza que deseja excluir esta disciplina?', async () => {
-            await supabase.from('disciplina').delete().eq('id', id);
-            renderDisciplinaListInModal();
-        });
-    }
-
     // --- LÓGICA DE CRUD (HANDLERS) ---
     
     // **REATORADO** Funções que disparam o modal de CRUD
@@ -992,6 +978,8 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchContent(appState.currentContentType, appState.currentDisciplinaId);
         });
     }
+    
+
 
     // Funções CRUD globais para tarefas (fora do modal)
     async function handleCreateTask(disciplinaId) {
@@ -1106,7 +1094,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- EVENT LISTENERS ---
     
-    elements.logoutBtn.addEventListener('click', logout);
+    if (elements.logoutBtn) {
+        elements.logoutBtn.addEventListener('click', logout);
+    }
     elements.hackerBtn.addEventListener('click', openDisciplinaModal);
     elements.closeDisciplinaModalBtn.addEventListener('click', () => elements.disciplinaModal.classList.add('hidden'));
 
@@ -1135,60 +1125,50 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.menuVideoBtn.onclick = () => fetchContent('video', appState.currentDisciplinaId);
     elements.menuPracticeBtn.onclick = () => fetchContent('practice', appState.currentDisciplinaId);
 
-    if (elements.menuExtraBtn) {
-        elements.menuExtraBtn.onclick = async () => {
-            appState.currentContentType = 'extra';
-            await fetchExtraContent(appState.currentDisciplinaId);
-        };
-    }
+    // Adiciona função ao escopo global para ser chamada pelo HTML
+    window.goBackToDashboard = showDashboard;
 
-    if (elements.addDisciplinaBtn) {
-        elements.addDisciplinaBtn.addEventListener('click', () => {
+    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+    protectPage();
+    loadDashboard();
+
+
+
+
+
+    // Evento para abrir o modal de disciplinas ao clicar no botão +
+    const addDisciplinaBtn = document.getElementById('add-disciplina-btn');
+    if (addDisciplinaBtn) {
+        addDisciplinaBtn.addEventListener('click', () => {
             elements.crudModalRoot.innerHTML = '';
             // Fecha o modal pizza, se estiver aberto
             elements.disciplinaModal.classList.add('hidden');
             openDisciplinaCrudModal('create');
         });
     }
-    
-    if (elements.headerUserName) {
-        elements.headerUserName.addEventListener('click', () => {
+
+    // Recarregar a página ao clicar em 'Olá, Usuário'
+    const headerUserName = document.getElementById('header-user-name');
+    if (headerUserName) {
+        headerUserName.addEventListener('click', () => {
             window.location.reload();
         });
     }
 
-    if (elements.englishFlagBtn) {
-        elements.englishFlagBtn.addEventListener('click', function() {
-            window.location.href = 'idiomas.html';
-        });
-    }
-    
-    // Lógica do Modal do AI Writer
-    if (elements.aiWriterBtn) {
-        elements.aiWriterBtn.addEventListener('click', () => {
-            console.log('AI Writer button clicked'); // Debug
-            elements.aiWriterModal.style.display = 'flex';
-            elements.aiWriterIframe.src = './AI_writer.html';
+    async function deleteDisciplina(id) {
+        showConfirmModal('Tem certeza que deseja excluir esta disciplina?', async () => {
+            await supabase.from('disciplina').delete().eq('id', id);
+            renderDisciplinaListInModal();
         });
     }
 
-    if (elements.closeAiWriterModal) {
-        elements.closeAiWriterModal.addEventListener('click', () => {
-            console.log('Close button clicked'); // Debug
-            elements.aiWriterModal.style.display = 'none';
-            elements.aiWriterIframe.src = '';
-        });
-    }
-
-    // Fecha o modal ao clicar fora dele
-    if (elements.aiWriterModal) {
-        elements.aiWriterModal.addEventListener('click', (e) => {
-            if (e.target === elements.aiWriterModal) {
-                console.log('Outside modal clicked'); // Debug
-                elements.aiWriterModal.style.display = 'none';
-                elements.aiWriterIframe.src = '';
-            }
-        });
+    // Evento do menu lateral para Conteúdo Extra
+    const menuExtraBtn = document.getElementById('menu-extra-btn');
+    if (menuExtraBtn) {
+        menuExtraBtn.onclick = async () => {
+            appState.currentContentType = 'extra';
+            await fetchExtraContent(appState.currentDisciplinaId);
+        };
     }
 
     // Adicionar bloco para exibir erros JS na tela
@@ -1211,18 +1191,13 @@ document.addEventListener('DOMContentLoaded', () => {
         errDiv.textContent = 'Erro JS: ' + event.message + ' (' + event.filename + ':' + event.lineno + ')';
     });
 
-    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-    protectPage();
-    loadDashboard();
-
-    // Adiciona funções ao escopo global para serem chamadas pelo HTML e outras funções
-    window.goBackToDashboard = showDashboard;
     window.fetchTasks = fetchTasks;
     window.appState = appState;
 });
 
-// Adiciona função para abrir modal de tarefas (fora do DOMContentLoaded para ser global)
+// Adiciona função para abrir modal de tarefas
 function openTasksModal(disciplinaId) {
+    // Remove qualquer modal de tarefas existente
     const existingModal = document.querySelector('.modal-overlay[data-modal="tasks"]');
     if (existingModal) {
         existingModal.remove();
@@ -1233,25 +1208,30 @@ function openTasksModal(disciplinaId) {
     modal.setAttribute('data-modal', 'tasks');
     modal.innerHTML = `
         <div class="modal-content modal-tasks-content">
-            <button class="close-btn close-tasks-modal" style="position:absolute;top:10px;right:16px;font-size:2em;background:none;border:none;cursor:pointer;">×</button>
+            <button class="close-btn close-tasks-modal" style="position:absolute;top:10px;right:16px;font-size:2em;background:none;border:none;cursor:pointer;">&times;</button>
             <div id="tasks-modal-table">Carregando tarefas...</div>
         </div>
     `;
     document.body.appendChild(modal);
     
+    // Adiciona classe show para tornar o modal visível
     setTimeout(() => modal.classList.add('show'), 10);
     
+    // Fecha ao clicar fora
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             closeTasksModal(modal);
         }
     });
     
+    // Fecha ao clicar no botão X
     modal.querySelector('.close-tasks-modal').onclick = () => closeTasksModal(modal);
     
+    // Busca e renderiza as tarefas
     fetchTasksForModal(disciplinaId, modal.querySelector('#tasks-modal-table'));
 }
 
+// Função para fechar o modal de tarefas
 function closeTasksModal(modal) {
     modal.classList.remove('show');
     setTimeout(() => {
@@ -1260,7 +1240,7 @@ function closeTasksModal(modal) {
         }
     }, 200);
 }
-
+// Função para buscar e renderizar tarefas no modal
 async function fetchTasksForModal(disciplinaId, container) {
     if (!container) {
         console.error('Container não encontrado para renderizar tarefas');
@@ -1301,6 +1281,7 @@ async function fetchTasksForModal(disciplinaId, container) {
         
         container.innerHTML = renderTasksTableForModal(tasks, disciplinaId);
         
+        // Adiciona eventos CRUD
         container.querySelectorAll('.edit-task-btn').forEach(btn => {
             btn.onclick = () => handleEditTaskModal(btn.dataset.id, disciplinaId, container);
         });
@@ -1317,7 +1298,7 @@ async function fetchTasksForModal(disciplinaId, container) {
         container.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Erro inesperado ao carregar tarefas.</div>`;
     }
 }
-
+// Função para renderizar tabela de tarefas no modal (reutiliza lógica de ordenação e status)
 function renderTasksTableForModal(tasks, disciplinaId) {
     const statusOrder = { 'pendente': 0, 'em andamento': 1, 'concluída': 2 };
     tasks = tasks.slice().sort((a, b) => {
@@ -1353,7 +1334,7 @@ function renderTasksTableForModal(tasks, disciplinaId) {
                         <td>${task.data_fim || ''}</td>
                         <td class="task-status ${task.situacao === 'pendente' ? 'status-pendente' : task.situacao === 'em andamento' ? 'status-andamento' : task.situacao === 'concluída' ? 'status-concluida' : ''}">
                             ${task.situacao || ''}
-                            ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">🔔</span>' : ''}
+                            ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">&#128276;</span>' : ''}
                         </td>
                         <td>
                             <button class='edit-task-btn' data-id='${task.id}'>✏️</button>
@@ -1366,7 +1347,7 @@ function renderTasksTableForModal(tasks, disciplinaId) {
     html += `<div style='text-align:center;'><button class='add-new-task-btn'>➕ Nova Tarefa</button></div>`;
     return html;
 }
-
+// Funções CRUD para o modal de tarefas
 function handleCreateTaskModal(disciplinaId, container) {
     const userId = localStorage.getItem('user_id');
     const today = new Date();
@@ -1399,7 +1380,6 @@ function handleCreateTaskModal(disciplinaId, container) {
         }
     });
 }
-
 function handleEditTaskModal(id, disciplinaId, container) {
     supabase.from('tasks').select('*').eq('id', id).single().then(({ data: item, error }) => {
         if (error) return alert('Erro ao buscar tarefa para edição.');
@@ -1426,7 +1406,6 @@ function handleEditTaskModal(id, disciplinaId, container) {
         });
     });
 }
-
 function handleDeleteTaskModal(id, disciplinaId, container) {
     showConfirmModal('Tem certeza que deseja excluir esta tarefa?', () => {
         supabase.from('tasks').delete().eq('id', id).then(() => {
