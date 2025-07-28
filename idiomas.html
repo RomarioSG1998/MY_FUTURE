@@ -2,9 +2,9 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | My Future</title>
-    <link rel="stylesheet" href="./css/index.css">
+    <link rel="stylesheet" href="./css/idiomas.css">
 </head>
 <body>
 
@@ -13,6 +13,7 @@
         <button id="hacker-btn" title="Ver Disciplinas">
             <img src="./imagens/iconehacker.webp" alt="Ícone Hacker">
         </button>
+        <button id="logout-btn">Sair</button>
     </header>
 
     <main>
@@ -22,6 +23,9 @@
                 <!-- Os cards de disciplinas serão inseridos via JS -->
             </div>
             <button id="add-disciplina-btn" title="Adicionar Disciplina" class="fab">+</button>
+    <button id="go-to-index-btn" title="Voltar para Home" class="fab">
+        <svg viewBox="0 0 24 24" width="32" height="32"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="#1976d2"/></svg>
+    </button>
             <div id="dashboard-infos"></div>
         </div>
 
@@ -45,26 +49,36 @@
 
     <div id="disciplina-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <button id="close-modal-disciplina" class="close-btn">&times;</button>
-            <h2>Disciplinas</h2>
-            <div id="pizza-container"></div>
+            <div class="modal-header">
+                <div class="header-actions">
+                    <h2>Disciplinas</h2>
+                    <button id="add-new-disciplina-modal">➕ Nova Disciplina</button>
+                </div>
+                <button id="close-modal-disciplina" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="pizza-container"></div>
+                <div id="registros-container"></div>
+            </div>
         </div>
     </div>
 
     <div id="crud-modal-root"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-    <script src="/js/idiomas.js"></script>
-    <script src="/js/mobile-enhancements.js"></script>
+    <script src="js/idiomas.js"></script>
+    <script src="js/auto-scroll.js"></script>
     <script>
-        const menuTasksBtn = document.getElementById('menu-tasks-btn');
-        if (menuTasksBtn) {
-            menuTasksBtn.onclick = () => {
-                if (window.appState && window.appState.currentDisciplinaId) {
-                    fetchTasks(window.appState.currentDisciplinaId);
-                }
-            };
+      // Garantir redirecionamento do botão flutuante para index.html
+      document.addEventListener('DOMContentLoaded', function() {
+        var goToIndexBtn = document.getElementById('go-to-index-btn');
+        if (goToIndexBtn) {
+          goToIndexBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.href = 'index.html';
+          });
         }
+      });
     </script>
 </body>
 </html>

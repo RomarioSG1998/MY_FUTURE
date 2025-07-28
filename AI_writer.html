@@ -34,6 +34,95 @@
         .status-message { margin-top: 10px; font-weight: 500; min-height: 20px; }
         footer { text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color); font-size: 0.9rem; color: #6c757d; }
         @media (max-width: 992px) { main { grid-template-columns: 1fr; } .controls { transform: rotate(90deg); margin: 20px 0; } }
+        
+        /* Botão de scroll automático */
+        .fab {
+            background: white;
+            color: #ff0000;
+            border: 2px solid #ff0000;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            bottom: 24px;
+            right: 24px;
+            position: fixed;
+            z-index: 1000;
+        }
+
+        .fab.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .fab:hover {
+            background: #ff0000;
+            transform: scale(1.1);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        .fab svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.2s ease;
+        }
+
+        .fab.scrolling-up svg {
+            transform: rotate(180deg);
+        }
+
+        .fab:hover svg path {
+            stroke: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .fab {
+                width: 45px;
+                height: 45px;
+                bottom: 16px;
+                right: 16px;
+                border: 2px solid #ff0000;
+            }
+            
+            .fab:active {
+                transform: scale(0.9);
+            }
+            
+            .fab svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fab { 
+                bottom: 12px; 
+                right: 12px; 
+                width: 44px;
+                height: 44px;
+            }
+            
+            .fab svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -174,5 +263,6 @@ ${text}
             });
         });
     </script>
+    <script src="js/auto-scroll.js"></script>
 </body>
 </html>

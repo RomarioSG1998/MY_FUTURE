@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Portal Pibid</title>
     <!-- Supabase CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
@@ -519,6 +519,95 @@
             background-color: #004085; /* Cor de fundo ainda mais escura ao clicar */
             transform: scale(0.98); /* Leve redução no tamanho ao clicar */
         }
+        
+        /* Botão de scroll automático */
+        .fab {
+            background: white;
+            color: #ff0000;
+            border: 2px solid #ff0000;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s ease;
+            opacity: 0;
+            transform: translateY(20px);
+            pointer-events: none;
+            bottom: 24px;
+            right: 24px;
+            position: fixed;
+            z-index: 1000;
+        }
+
+        .fab.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .fab:hover {
+            background: #ff0000;
+            transform: scale(1.1);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        .fab svg {
+            width: 24px;
+            height: 24px;
+            transition: transform 0.2s ease;
+        }
+
+        .fab.scrolling-up svg {
+            transform: rotate(180deg);
+        }
+
+        .fab:hover svg path {
+            stroke: white;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 768px) {
+            .fab {
+                width: 45px;
+                height: 45px;
+                bottom: 16px;
+                right: 16px;
+                border: 2px solid #ff0000;
+            }
+            
+            .fab:active {
+                transform: scale(0.9);
+            }
+            
+            .fab svg {
+                width: 20px;
+                height: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fab { 
+                bottom: 12px; 
+                right: 12px; 
+                width: 44px;
+                height: 44px;
+            }
+            
+            .fab svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -833,5 +922,6 @@
         // Atualizar o ano no footer
         document.getElementById('current-year').textContent = new Date().getFullYear();
     </script>
+    <script src="js/auto-scroll.js"></script>
 </body>
 </html>

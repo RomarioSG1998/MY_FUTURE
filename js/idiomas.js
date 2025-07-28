@@ -3,6 +3,88 @@ const SUPABASE_URL = 'https://zzrylgsjksrjotgcwavt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cnlsZ3Nqa3Nyam90Z2N3YXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4Mjc0OTYsImV4cCI6MjA2NDQwMzQ5Nn0.caBlCmOqKonuxTPacPIHH1FeVZFr8AJKwpz_v1Q3BwM';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Função global para gerenciar o arrasto do botão de vídeo
+window.handleVideoButtonDrag = function(event, button) {
+    event.preventDefault();
+    const isTouch = event.type.startsWith('touch');
+    let startX, startY, initialX, initialY;
+    let transform = { x: 0, y: 0 };
+
+    // Pega a posição inicial do botão relativa à janela
+    const rect = button.getBoundingClientRect();
+    initialX = rect.left;
+    initialY = rect.top;
+
+    // Define o ponto inicial do arrasto
+    if (isTouch) {
+        startX = event.touches[0].clientX - initialX;
+        startY = event.touches[0].clientY - initialY;
+    } else {
+        startX = event.clientX - initialX;
+        startY = event.clientY - initialY;
+    }
+
+    // Remove a transformação inicial do botão
+    button.style.transform = 'none';
+    button.style.left = initialX + 'px';
+    button.style.bottom = 'auto';
+    button.style.top = initialY + 'px';
+
+    let isDragging = false;
+    const moveThreshold = 5; // Pixels mínimos para considerar como arrasto
+
+    function handleMove(e) {
+        const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+        const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+        if (!isDragging) {
+            // Verifica se moveu o suficiente para considerar como arrasto
+            const deltaX = Math.abs(clientX - (isTouch ? event.touches[0].clientX : event.clientX));
+            const deltaY = Math.abs(clientY - (isTouch ? event.touches[0].clientY : event.clientY));
+            if (deltaX > moveThreshold || deltaY > moveThreshold) {
+                isDragging = true;
+                button.style.cursor = 'move';
+            }
+        }
+
+        if (isDragging) {
+            e.preventDefault();
+            // Calcula a nova posição
+            const newX = clientX - startX;
+            const newY = clientY - startY;
+
+            // Limita o movimento dentro da janela
+            const buttonRect = button.getBoundingClientRect();
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+
+            const limitedX = Math.min(Math.max(newX, 0), windowWidth - buttonRect.width);
+            const limitedY = Math.min(Math.max(newY, 0), windowHeight - buttonRect.height);
+
+            button.style.left = limitedX + 'px';
+            button.style.top = limitedY + 'px';
+        }
+    }
+
+    function handleEnd(e) {
+        if (!isDragging) {
+            // Se não houve arrasto, considera como clique e abre o modal
+            const link = button.dataset.link;
+            if (typeof window.openMovableVideoModal === 'function') {
+                window.openMovableVideoModal(link);
+            }
+        }
+
+        document.removeEventListener(isTouch ? 'touchmove' : 'mousemove', handleMove);
+        document.removeEventListener(isTouch ? 'touchend' : 'mouseup', handleEnd);
+        button.style.cursor = 'pointer';
+        isDragging = false;
+    }
+
+    document.addEventListener(isTouch ? 'touchmove' : 'mousemove', handleMove, { passive: false });
+    document.addEventListener(isTouch ? 'touchend' : 'mouseup', handleEnd);
+};
+
 // Função genérica para criar modais de CRUD (deve estar no topo do arquivo)
 function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
     const crudModalRoot = document.getElementById('crud-modal-root');
@@ -30,13 +112,21 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
 
     const modalHtml = `
         <div class="modal-overlay crud-modal" style="z-index: 2147483647 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
-            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 32px 24px 24px 24px; max-width: 400px; width: 100%; position: relative;">
-                <button class="close-btn" style="z-index: 2147483647 !important; position: absolute; top: 12px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">&times;</button>
-                <h3>${title}</h3>
-                <form>
-                    ${fieldsHtml}
-                    <button type="submit">Salvar</button>
-                </form>
+            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 400px; width: 100%; position: relative;">
+                <div class="modal-header" style="position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;">
+                    <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0;">${title}</h3>
+                    </div>
+                    <button class="close-btn" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">×</button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        ${fieldsHtml}
+                        <div class="action-buttons">
+                            <button type="submit">Salvar</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>`;
 
@@ -57,6 +147,17 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
     modalOverlay.querySelector('.close-btn').onclick = () => {
         crudModalRoot.innerHTML = '';
     };
+
+    // Manipulador do botão "Adicionar Novo"
+    const addNewButton = modalOverlay.querySelector('.add-new-button');
+    if (addNewButton) {
+        addNewButton.onclick = () => {
+            // Limpa o formulário
+            form.reset();
+            // Rola para o topo do modal
+            modalOverlay.querySelector('.modal-body').scrollTop = 0;
+        };
+    }
 
     form.onsubmit = async (e) => {
         e.preventDefault();
@@ -140,12 +241,12 @@ function showConfirmModal(message, onConfirm, onCancel = null) {
 // Configurações para cada tipo de CRUD (deve estar no escopo global)
 function getCrudConfig(type) {
     const configs = {
-        text: {
-            label: 'Texto',
+        video_text: {
+            label: 'Vídeo/Text',
             fields: [
-                { name: 'title', type: 'text', placeholder: 'Título' },
-                { name: 'complete_text', type: 'textarea', placeholder: 'Texto completo' },
-                { name: 'image', type: 'text', placeholder: 'URL da Imagem (opcional)' },
+                { name: 'link_video', type: 'text', placeholder: 'Link do Vídeo' },
+                { name: 'text', type: 'textarea', placeholder: 'Texto' },
+                { name: 'id_disciplina', type: 'hidden', placeholder: 'ID da Disciplina', hideOnCreate: true }
             ]
         },
         video: {
@@ -165,6 +266,22 @@ function getCrudConfig(type) {
                  ]},
                 { name: 'texto', type: 'textarea', placeholder: 'Descrição da prática' },
                 { name: 'link', type: 'text', placeholder: 'Link (Opcional)' },
+            ]
+        },
+        disciplina: {
+            label: 'Disciplina',
+            fields: [
+                { name: 'nome', type: 'text', placeholder: 'Nome da disciplina' },
+                { name: 'date_inicio', type: 'date', placeholder: 'Data de início' },
+                { name: 'situation', type: 'select', options: [
+                    { value: 'estudando', label: 'Estudando' },
+                    { value: 'finalizado', label: 'Finalizado' }
+                ], placeholder: 'Situação' },
+                { name: 'date_fim', type: 'date', placeholder: 'Data de fim' },
+                { name: 'tipo_disciplina', type: 'select', options: [
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'idioma', label: 'Idioma' }
+                ], placeholder: 'Tipo da Disciplina' }
             ]
         },
         tasks: {
@@ -200,13 +317,20 @@ document.addEventListener('DOMContentLoaded', () => {
         editGearBtn: document.getElementById('edit-gear-btn'),
         extraContentBtn: document.getElementById('extra-content-btn'),
         extraContentMenu: document.getElementById('extra-content-menu'),
-        menuTextBtn: document.getElementById('menu-text-btn'),
+        menuTextBtn: document.getElementById('menu-text-btn'), // (button can be relabeled if needed)
         menuVideoBtn: document.getElementById('menu-video-btn'),
         menuPracticeBtn: document.getElementById('menu-practice-btn'),
+        menuExtraBtn: document.getElementById('menu-extra-btn'),
         disciplinaModal: document.getElementById('disciplina-modal'),
         closeDisciplinaModalBtn: document.getElementById('close-modal-disciplina'),
         pizzaContainer: document.getElementById('pizza-container'),
         crudModalRoot: document.getElementById('crud-modal-root'),
+        addDisciplinaBtn: document.getElementById('add-disciplina-btn'),
+        englishFlagBtn: document.getElementById('english-flag-btn'),
+        aiWriterBtn: document.getElementById('ai-writer-btn'),
+        aiWriterModal: document.getElementById('ai-writer-modal'),
+        closeAiWriterModal: document.getElementById('close-ai-writer-modal'),
+        aiWriterIframe: document.getElementById('ai-writer-iframe')
     };
 
     // --- GERENCIAMENTO DE ESTADO ---
@@ -215,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditMode: false,
         currentDisciplinaId: null,
         currentContent: [],
-        currentContentType: 'text', // 'text', 'video', ou 'practice'
+        currentContentType: 'video_text', // 'video_text', 'video', ou 'practice'
     };
 
     // --- FUNÇÕES DE AUTENTICAÇÃO E INICIALIZAÇÃO ---
@@ -269,7 +393,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!currentContent || currentContent.length === 0) {
             elements.contentView.innerHTML = `
-                <button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>
+                <button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>
                 <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
                     Ainda não há conteúdo de ${currentContentType} para esta disciplina.
                 </div>
@@ -283,15 +407,47 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>`;
+        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
         currentContent.forEach(item => {
             let itemHtml = '';
             switch(currentContentType) {
-                case 'text':
+                case 'video_text':
                     itemHtml = `
-                        ${item.title ? `<span class="registro-title">${item.title}</span>` : ''}
-                        ${item.complete_text ? `<span class="registro-text">${item.complete_text}</span>` : ''}
-                        ${item.image ? `<img src="${item.image}" alt="Imagem do registro" class="registro-img">` : ''}
+                        ${item.link_video ? `<button class="registro-title open-video-modal-btn modern-video-btn fixed-video-btn" data-link="${item.link_video}"
+                            style="
+                                position: fixed;
+                                bottom: 32px;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                z-index: 2147483646;
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                background: linear-gradient(90deg, #1976d2 60%, #764ba2 100%);
+                                color: #fff;
+                                border: none;
+                                border-radius: 32px;
+                                padding: 12px 32px;
+                                font-size: 1.08em;
+                                font-weight: 600;
+                                box-shadow: 0 2px 12px rgba(25,118,210,0.10);
+                                cursor: move;
+                                margin-bottom: 0;
+                                transition: background 0.2s, box-shadow 0.2s;
+                                white-space: nowrap;
+                                touch-action: none;
+                                user-select: none;
+                            "
+                            onmousedown="handleVideoButtonDrag(event, this)"
+                            ontouchstart="handleVideoButtonDrag(event, this)"
+                            onmouseover="this.style.background='linear-gradient(90deg,#1565c0 60%,#5a189a 100%)';this.style.transform='translateX(-50%) translateY(-2px) scale(1.03)';this.style.boxShadow='0 4px 18px rgba(25,118,210,0.18)';"
+                            onmouseout="this.style.background='linear-gradient(90deg,#1976d2 60%,#764ba2 100%)';this.style.transform='translateX(-50%)';this.style.boxShadow='0 2px 12px rgba(25,118,210,0.10)';"
+                        >
+                            <span class="video-btn-icon" style="font-size:1.3em;display:flex;align-items:center;">▶️</span>
+                            <span class="video-btn-label" style="letter-spacing:0.5px;">Assistir Vídeo</span>
+                        </button>` : ''}
+                        ${item.text ? `<span class="registro-text">${item.text}</span>` : ''}
+                        ${item.id_disciplina ? `<span class="registro-id-disciplina">Disciplina: ${item.id_disciplina}</span>` : ''}
                     `;
                     break;
                 case 'video':
@@ -325,8 +481,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         elements.contentView.innerHTML = contentHtml;
         elements.contentView.classList.toggle('videos-mode', currentContentType === 'video');
+        // Evento para abrir modal móvel/redimensionável do vídeo
+        if (currentContentType === 'video_text') {
+            elements.contentView.querySelectorAll('.open-video-modal-btn').forEach(btn => {
+                btn.onclick = () => openMovableVideoModal(btn.dataset.link);
+            });
+        }
         if (isEditMode && currentContentType !== 'tasks') {
-             elements.contentView.querySelectorAll('.crud-btn.edit').forEach(btn => {
+            elements.contentView.querySelectorAll('.crud-btn.edit').forEach(btn => {
                 const id = btn.closest('.registro').dataset.id;
                 btn.onclick = () => handleEdit(currentContentType, id);
             });
@@ -334,9 +496,147 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = btn.closest('.registro').dataset.id;
                 btn.onclick = () => handleDelete(currentContentType, id);
             });
-             const addBtn = elements.contentView.querySelector('.add-new-content-btn');
-             if(addBtn) addBtn.onclick = () => handleCreate(currentContentType, currentDisciplinaId);
+            const addBtn = elements.contentView.querySelector('.add-new-content-btn');
+            if(addBtn) addBtn.onclick = () => handleCreate(currentContentType, currentDisciplinaId);
         }
+// Modal móvel e redimensionável para vídeo embed
+function openMovableVideoModal(link) {
+    // Remove modal anterior se existir
+    const oldModal = document.getElementById('movable-video-modal');
+    if (oldModal) oldModal.remove();
+    let embedHtml = '';
+    
+    // Verifica se é um vídeo do YouTube
+    const ytMatch = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+    if (ytMatch && ytMatch[1]) {
+        const videoId = ytMatch[1];
+        embedHtml = `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+    } 
+    // Verifica se é um vídeo do Vimeo
+    else if (link.match(/vimeo\.com\/(\d+)/)) {
+        const videoId = link.match(/vimeo\.com\/(\d+)/)[1];
+        embedHtml = `<iframe src="https://player.vimeo.com/video/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+    }
+    // Verifica se é um vídeo do Dailymotion
+    else if (link.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/)) {
+        const videoId = link.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/)[1];
+        embedHtml = `<iframe src="https://www.dailymotion.com/embed/video/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+    }
+    // Verifica se é um clipe da Twitch
+    else if (link.match(/twitch\.tv\/\w+\/clip\/([a-zA-Z0-9-]+)/)) {
+        const clipId = link.match(/twitch\.tv\/\w+\/clip\/([a-zA-Z0-9-]+)/)[1];
+        embedHtml = `<iframe src="https://clips.twitch.tv/embed?clip=${clipId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+    }
+    // Verifica se é um vídeo do Google Drive
+    else if (link.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9-_]+)/)) {
+        const fileId = link.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9-_]+)/)[1];
+        embedHtml = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+    }
+    // Se for um link direto para um arquivo de vídeo
+    else if (link.match(/\.(mp4|webm|ogg|mov|avi|wmv|flv|mkv|m4v)$/i)) {
+        const extension = link.split('.').pop().toLowerCase();
+        let mimeType;
+        switch(extension) {
+            case 'mp4':
+            case 'm4v':
+                mimeType = 'video/mp4';
+                break;
+            case 'webm':
+                mimeType = 'video/webm';
+                break;
+            case 'ogg':
+                mimeType = 'video/ogg';
+                break;
+            case 'mov':
+                mimeType = 'video/quicktime';
+                break;
+            default:
+                mimeType = 'video/' + extension;
+        }
+        embedHtml = `
+            <video controls controlsList="nodownload" style="width:100%;height:100%;background:#000;">
+                <source src="${link}" type="${mimeType}">
+                <p style="color:#fff;text-align:center;padding:20px;">
+                    Seu navegador não suporta a reprodução deste formato de vídeo (${extension}).
+                    <br><br>
+                    <a href="${link}" target="_blank" style="color:#1976d2;text-decoration:none;">Clique aqui para baixar o vídeo</a>
+                </p>
+            </video>`;
+    }
+    // Se não for nenhum dos formatos acima, mostra como link
+    else {
+        embedHtml = `<div style="display:flex;align-items:center;justify-content:center;height:100%;">
+            <a href="${link}" target="_blank" style="color:#1976d2;text-decoration:none;padding:16px;text-align:center;">
+                <span style="display:block;font-size:2em;margin-bottom:8px;">🔗</span>
+                Abrir vídeo em nova aba
+            </a>
+        </div>`;
+    }
+    const modal = document.createElement('div');
+    modal.id = 'movable-video-modal';
+    modal.style.position = 'fixed';
+    modal.style.top = '80px';
+    modal.style.left = '80px';
+    modal.style.width = '520px';
+    modal.style.height = '340px';
+    modal.style.background = 'rgba(255,255,255,0.97)';
+    modal.style.border = 'none';
+    modal.style.borderRadius = '18px';
+    modal.style.zIndex = '2147483647';
+    modal.style.boxShadow = '0 8px 32px 0 rgba(25,118,210,0.18), 0 1.5px 8px 0 rgba(76,0,130,0.10)';
+    modal.style.display = 'flex';
+    modal.style.flexDirection = 'column';
+    modal.style.overflow = 'hidden';
+    modal.innerHTML = `
+        <div id="video-modal-header" style="cursor:move; background:linear-gradient(90deg,#1976d2 60%,#764ba2 100%); color:#fff; padding:6px 14px; border-radius:18px 18px 0 0; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(25,118,210,0.10); min-height:36px; height:36px;">
+            <span style="font-size:1em; font-weight:500; letter-spacing:0.2px; display:flex; align-items:center; gap:6px;">
+                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff2"/><path d="M10 8l6 4-6 4V8z" fill="#fff"/></svg>
+                Vídeo
+            </span>
+            <div style="display:flex; gap:6px; align-items:center;">
+                <button id="video-modal-shrink" title="Diminuir" style="background:none;border:none;color:#fff;font-size:1.1em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;"><span style="font-size:1.1em;">➖</span></button>
+                <button id="video-modal-grow" title="Aumentar" style="background:none;border:none;color:#fff;font-size:1.1em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;"><span style="font-size:1.1em;">➕</span></button>
+                <button id="video-modal-close" title="Fechar" style="background:none;border:none;color:#fff;font-size:1.3em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;"><span style="font-size:1.1em;">×</span></button>
+            </div>
+        </div>
+        <div id="video-modal-body" style="flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#111;">${embedHtml}</div>
+    `;
+    document.body.appendChild(modal);
+    // Fechar
+    modal.querySelector('#video-modal-close').onclick = () => modal.remove();
+    // Redimensionar
+    let width = 480, height = 320;
+    modal.querySelector('#video-modal-grow').onclick = () => {
+        width += 80; height += 54;
+        modal.style.width = width + 'px';
+        modal.style.height = height + 'px';
+    };
+    modal.querySelector('#video-modal-shrink').onclick = () => {
+        width = Math.max(320, width - 80); height = Math.max(180, height - 54);
+        modal.style.width = width + 'px';
+        modal.style.height = height + 'px';
+    };
+    // Arrastar
+    const header = modal.querySelector('#video-modal-header');
+    let isDragging = false, startX, startY, startLeft, startTop;
+    header.onmousedown = function(e) {
+        isDragging = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startLeft = parseInt(modal.style.left);
+        startTop = parseInt(modal.style.top);
+        document.body.style.userSelect = 'none';
+    };
+    document.onmousemove = function(e) {
+        if (!isDragging) return;
+        modal.style.left = (startLeft + e.clientX - startX) + 'px';
+        modal.style.top = (startTop + e.clientY - startY) + 'px';
+    };
+    document.onmouseup = function() {
+        isDragging = false;
+        document.body.style.userSelect = '';
+    };
+}
     }
     
     // **CORRIGIDO** Renderiza o embed do YouTube de forma correta e segura
@@ -441,7 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para renderizar Conteúdo Extra como cards, igual às outras seções
     function renderExtraContentCards(data, isEditMode, idDisciplina) {
-        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>`;
+        let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
         if (!data || data.length === 0) {
             contentHtml += `
                 <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
@@ -519,7 +819,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     { value: 'Texto', label: 'Texto' },
                     { value: 'Vídeo', label: 'Vídeo' },
                     { value: 'Imagem', label: 'Imagem' }
-                ], placeholder: 'Tipo do Arquivo' },
+                ], placeholder: 'Tipo do Arquivo', headerFixed: true },
                 { name: 'title', type: 'text', placeholder: 'Título' },
                 { name: 'link_or_text', type: 'text', placeholder: 'Link, texto ou URL da imagem' }
             ],
@@ -582,8 +882,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive)
-        const estudando = disciplinas.filter(d => (d.situation || '').toLowerCase() === 'estudando');
+        // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive) e tipo_disciplina === 'idioma'
+        const estudando = disciplinas.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'idioma');
 
         if (estudando.length === 0) {
             elements.dashboardDisciplinas.innerHTML = '<div>Nenhuma disciplina em estudo.</div>';
@@ -604,6 +904,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="progress-label">${diasEstudados}/${totalDias} dias</div>
                         <div class="card-disciplina-situation">${d.situation || ''}</div>
+                        <div class="card-disciplina-type">${d.tipo_disciplina || ''}</div>
                         <div class="card-disciplina-actions">
                             <button class="btn-tasks" data-id="${d.id}" title="Gerenciar Tarefas">✅ Ver Tarefas</button>
                         </div>
@@ -614,7 +915,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.addEventListener('click', (e) => {
                     // Evita conflito de clique no botão de tarefas
                     if (e.target.classList.contains('btn-tasks')) return;
-                    fetchContent('text', card.dataset.id);
+                    fetchContent('video_text', card.dataset.id);
                 });
             });
             // Evento para o botão de tarefas
@@ -627,8 +928,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Carrega contagens totais
-        const [textos, videos, practices] = await Promise.all([
-            supabase.from('text').select('id', { count: 'exact', head: true }),
+        const [video_texts, videos, practices] = await Promise.all([
+            supabase.from('video_text').select('id', { count: 'exact', head: true }),
             supabase.from('video').select('id', { count: 'exact', head: true }),
             supabase.from('practice').select('id', { count: 'exact', head: true })
         ]);
@@ -700,7 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const diff = (fim - hoje) / (1000 * 60 * 60 * 24);
             return diff <= 10 && diff >= 0;
         }
-        let html = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">&times;</button>`;
+        let html = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
         const isEditMode = appState.isEditMode;
         const disciplinaId = appState.currentDisciplinaId;
         if (!tasks || tasks.length === 0) {
@@ -735,7 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <td>${task.data_fim || ''}</td>
                             <td class="task-status ${task.situacao === 'pendente' ? 'status-pendente' : task.situacao === 'em andamento' ? 'status-andamento' : task.situacao === 'concluída' ? 'status-concluida' : ''}">
                                 ${task.situacao || ''}
-                                ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">&#128276;</span>' : ''}
+                                ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">🔔</span>' : ''}
                             </td>
                             ${isEditMode ? `<td>
                                 <button class='edit-task-btn' data-id='${task.id}'>✏️</button>
@@ -802,8 +1103,8 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Nenhuma disciplina encontrada.</div>';
             return;
         }
-        // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive)
-        const estudando = data.filter(d => (d.situation || '').toLowerCase() === 'estudando');
+        // Filtra apenas as disciplinas com situation === 'estudando' e tipo_disciplina === 'normal'
+        const estudando = data.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'idioma');
         if (estudando.length === 0) {
             elements.pizzaContainer.innerHTML = '<div style="text-align:center;">Nenhuma disciplina em estudo.</div>';
             return;
@@ -827,7 +1128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Adiciona evento de clique nas fatias
         elements.pizzaContainer.querySelectorAll('path').forEach(path => {
             path.addEventListener('click', () => {
-                fetchContent('text', path.dataset.id);
+                fetchContent('video_text', path.dataset.id);
                 elements.disciplinaModal.classList.add('hidden');
             });
         });
@@ -845,11 +1146,13 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Erro ao carregar disciplinas.</div>';
             return;
         }
-        if (data.length === 0) {
+        // Filtra apenas disciplinas do tipo 'normal'
+        const dataNormal = data.filter(d => (d.tipo_disciplina || '').toLowerCase() === 'idioma');
+        if (dataNormal.length === 0) {
             elements.pizzaContainer.innerHTML = '<div style="text-align:center;">Nenhuma disciplina encontrada.</div>';
         } else {
             // Ordena: estudando no topo
-            data.sort((a, b) => {
+            dataNormal.sort((a, b) => {
                 const aEst = (a.situation || '').toLowerCase() === 'estudando' ? 0 : 1;
                 const bEst = (b.situation || '').toLowerCase() === 'estudando' ? 0 : 1;
                 return aEst - bEst;
@@ -863,17 +1166,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             <th>Data Início</th>
                             <th>Situação</th>
                             <th>Data Fim</th>
+                            <th>Tipo</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.map(d => `
+                        ${dataNormal.map(d => `
                             <tr${((d.situation || '').toLowerCase() !== 'estudando') ? ' style="background:#d4edda;"' : ''}>
                                 <td>${d.id}</td>
                                 <td>${d.nome}</td>
                                 <td>${d.date_inicio || ''}</td>
                                 <td>${d.situation || ''}</td>
                                 <td>${d.date_fim || ''}</td>
+                                <td>${d.tipo_disciplina || ''}</td>
                                 <td>
                                     <button class="edit-disciplina-btn" data-id="${d.id}">✏️</button>
                                     <button class="delete-disciplina-btn" data-id="${d.id}">🗑️</button>
@@ -902,6 +1207,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function deleteDisciplina(id) {
+        showConfirmModal('Tem certeza que deseja excluir esta disciplina?', async () => {
+            await supabase.from('disciplina').delete().eq('id', id);
+            renderDisciplinaListInModal();
+        });
+    }
+
     // --- LÓGICA DE CRUD (HANDLERS) ---
     
     // **REATORADO** Funções que disparam o modal de CRUD
@@ -914,38 +1226,32 @@ document.addEventListener('DOMContentLoaded', () => {
             onSubmit: async (data) => {
                 let insertData = {};
                 let valid = true;
-                switch(type) {
-                    case 'text':
-                        valid = data.title && data.complete_text;
-                        insertData = {
-                            id_disciplina: disciplinaId,
-                            id_usuario: userId,
-                            complete_text: data.complete_text,
-                            image: data.image,
-                            title: data.title
-                        };
-                        break;
-                    case 'video':
-                        valid = data.title && data.video_link;
-                        insertData = {
-                            id_disciplina: disciplinaId,
-                            id_usuario: userId,
-                            title: data.title,
-                            video_link: data.video_link
-                        };
-                        break;
-                    case 'practice':
-                        valid = data.tipo && data.texto;
-                        insertData = {
-                            id_disciplina: disciplinaId,
-                            id_usuario: userId,
-                            tipo: data.tipo,
-                            texto: data.texto,
-                            link: data.link
-                        };
-                        break;
-                    default:
-                        valid = false;
+                if (type === 'video_text') {
+                    valid = data.link_video && data.text;
+                    insertData = {
+                        link_video: data.link_video,
+                        text: data.text,
+                        id_disciplina: disciplinaId
+                    };
+                } else if (type === 'video') {
+                    valid = data.title && data.video_link;
+                    insertData = {
+                        id_disciplina: disciplinaId,
+                        id_usuario: userId,
+                        title: data.title,
+                        video_link: data.video_link
+                    };
+                } else if (type === 'practice') {
+                    valid = data.tipo && data.texto;
+                    insertData = {
+                        id_disciplina: disciplinaId,
+                        id_usuario: userId,
+                        tipo: data.tipo,
+                        texto: data.texto,
+                        link: data.link
+                    };
+                } else {
+                    valid = false;
                 }
                 if (!valid) {
                     alert('Preencha todos os campos obrigatórios.');
@@ -978,38 +1284,8 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchContent(appState.currentContentType, appState.currentDisciplinaId);
         });
     }
-    
-
 
     // Funções CRUD globais para tarefas (fora do modal)
-    async function handleCreateTask(disciplinaId) {
-        const userId = localStorage.getItem('user_id');
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const dd = String(today.getDate()).padStart(2, '0');
-        const todayStr = `${yyyy}-${mm}-${dd}`;
-        createCrudModal({
-            title: 'Nova Tarefa',
-            formFields: getCrudConfig('tasks').fields,
-            initialData: { id_disciplina: disciplinaId, id_usuario: userId, data_inicio: todayStr },
-            onSubmit: async (data) => {
-                if (!data.nome || !data.data_fim || !data.situacao) {
-                    alert('Preencha todos os campos obrigatórios.');
-                    return;
-                }
-                await supabase.from('tasks').insert([{
-                    id_disciplina: disciplinaId,
-                    id_usuario: userId,
-                    data_inicio: todayStr,
-                    data_fim: data.data_fim,
-                    situacao: data.situacao,
-                    nome: data.nome
-                }]);
-                await fetchTasks(disciplinaId);
-            }
-        });
-    }
     async function handleEditTask(id, disciplinaId) {
         const { data: item, error } = await supabase.from('tasks').select('*').eq('id', id).single();
         if (error) return alert('Erro ao buscar tarefa para edição.');
@@ -1043,32 +1319,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openDisciplinaCrudModal(mode, id = null) {
-        const fields = [
-            { name: 'nome', type: 'text', placeholder: 'Nome da disciplina' },
-            { name: 'date_inicio', type: 'date', placeholder: 'Data de início' },
-            { name: 'situation', type: 'select', options: [
-                { value: 'estudando', label: 'Estudando' },
-                { value: 'finalizado', label: 'Finalizado' }
-            ], placeholder: 'Situação' },
-            { name: 'date_fim', type: 'date', placeholder: 'Data de fim' }
-        ];
+        const fields = getCrudConfig('disciplina').fields;
         if (mode === 'create') {
             const userId = localStorage.getItem('user_id');
             createCrudModal({
                 title: 'Nova Disciplina',
                 formFields: fields,
                 onSubmit: async (data) => {
-                    if (!data.nome || !data.date_inicio || !data.situation || !data.date_fim) {
-                        alert('Preencha todos os campos obrigatórios.');
-                        return;
-                    }
-                    await supabase.from('disciplina').insert([{
-                        id_usuario: userId,
-                        nome: data.nome,
-                        date_inicio: data.date_inicio,
-                        date_fim: data.date_fim,
-                        situation: data.situation
-                    }]);
+                                    if (!data.nome || !data.date_inicio || !data.situation || !data.date_fim || !data.tipo_disciplina) {
+                    alert('Preencha todos os campos obrigatórios.');
+                    return;
+                }
+                await supabase.from('disciplina').insert([{
+                    id_usuario: userId,
+                    nome: data.nome,
+                    date_inicio: data.date_inicio,
+                    date_fim: data.date_fim,
+                    situation: data.situation,
+                    tipo_disciplina: data.tipo_disciplina
+                }]);
                     renderDisciplinaListInModal();
                 }
             });
@@ -1083,7 +1352,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             nome: data.nome,
                             date_inicio: data.date_inicio,
                             date_fim: data.date_fim,
-                            situation: data.situation
+                            situation: data.situation,
+                            tipo_disciplina: data.tipo_disciplina
                         }).eq('id', id);
                         renderDisciplinaListInModal();
                     }
@@ -1094,9 +1364,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- EVENT LISTENERS ---
     
-    if (elements.logoutBtn) {
-        elements.logoutBtn.addEventListener('click', logout);
-    }
+    elements.logoutBtn.addEventListener('click', logout);
     elements.hackerBtn.addEventListener('click', openDisciplinaModal);
     elements.closeDisciplinaModalBtn.addEventListener('click', () => elements.disciplinaModal.classList.add('hidden'));
 
@@ -1121,54 +1389,59 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.extraContentMenu.classList.add('hidden');
     });
 
-    elements.menuTextBtn.onclick = () => fetchContent('text', appState.currentDisciplinaId);
+    elements.menuTextBtn.onclick = () => fetchContent('video_text', appState.currentDisciplinaId);
     elements.menuVideoBtn.onclick = () => fetchContent('video', appState.currentDisciplinaId);
     elements.menuPracticeBtn.onclick = () => fetchContent('practice', appState.currentDisciplinaId);
 
-    // Adiciona função ao escopo global para ser chamada pelo HTML
-    window.goBackToDashboard = showDashboard;
+    if (elements.menuExtraBtn) {
+        elements.menuExtraBtn.onclick = async () => {
+            appState.currentContentType = 'extra';
+            await fetchExtraContent(appState.currentDisciplinaId);
+        };
+    }
 
-    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-    protectPage();
-    loadDashboard();
-
-
-
-
-
-    // Evento para abrir o modal de disciplinas ao clicar no botão +
-    const addDisciplinaBtn = document.getElementById('add-disciplina-btn');
-    if (addDisciplinaBtn) {
-        addDisciplinaBtn.addEventListener('click', () => {
+    if (elements.addDisciplinaBtn) {
+        elements.addDisciplinaBtn.addEventListener('click', () => {
             elements.crudModalRoot.innerHTML = '';
             // Fecha o modal pizza, se estiver aberto
             elements.disciplinaModal.classList.add('hidden');
             openDisciplinaCrudModal('create');
         });
     }
-
-    // Recarregar a página ao clicar em 'Olá, Usuário'
-    const headerUserName = document.getElementById('header-user-name');
-    if (headerUserName) {
-        headerUserName.addEventListener('click', () => {
+    
+    if (elements.headerUserName) {
+        elements.headerUserName.addEventListener('click', () => {
             window.location.reload();
         });
     }
 
-    async function deleteDisciplina(id) {
-        showConfirmModal('Tem certeza que deseja excluir esta disciplina?', async () => {
-            await supabase.from('disciplina').delete().eq('id', id);
-            renderDisciplinaListInModal();
+    if (elements.englishFlagBtn) {
+        elements.englishFlagBtn.addEventListener('click', function() {
+            window.location.href = 'idiomas.html';
         });
     }
 
-    // Evento do menu lateral para Conteúdo Extra
-    const menuExtraBtn = document.getElementById('menu-extra-btn');
-    if (menuExtraBtn) {
-        menuExtraBtn.onclick = async () => {
-            appState.currentContentType = 'extra';
-            await fetchExtraContent(appState.currentDisciplinaId);
-        };
+    if (elements.closeAiWriterModal) {
+        elements.closeAiWriterModal.addEventListener('click', () => {
+            elements.aiWriterModal.classList.remove('show');
+            setTimeout(() => {
+                elements.aiWriterModal.style.display = 'none';
+                elements.aiWriterIframe.src = '';
+            }, 200); // Tempo para a animação completar
+        });
+    }
+
+    // Fecha o modal ao clicar fora dele
+    if (elements.aiWriterModal) {
+        elements.aiWriterModal.addEventListener('click', (e) => {
+            if (e.target === elements.aiWriterModal) {
+                elements.aiWriterModal.classList.remove('show');
+                setTimeout(() => {
+                    elements.aiWriterModal.style.display = 'none';
+                    elements.aiWriterIframe.src = '';
+                }, 200); // Tempo para a animação completar
+            }
+        });
     }
 
     // Adicionar bloco para exibir erros JS na tela
@@ -1191,13 +1464,18 @@ document.addEventListener('DOMContentLoaded', () => {
         errDiv.textContent = 'Erro JS: ' + event.message + ' (' + event.filename + ':' + event.lineno + ')';
     });
 
+    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+    protectPage();
+    loadDashboard();
+
+    // Adiciona funções ao escopo global para serem chamadas pelo HTML e outras funções
+    window.goBackToDashboard = showDashboard;
     window.fetchTasks = fetchTasks;
     window.appState = appState;
 });
 
-// Adiciona função para abrir modal de tarefas
+// Adiciona função para abrir modal de tarefas (fora do DOMContentLoaded para ser global)
 function openTasksModal(disciplinaId) {
-    // Remove qualquer modal de tarefas existente
     const existingModal = document.querySelector('.modal-overlay[data-modal="tasks"]');
     if (existingModal) {
         existingModal.remove();
@@ -1208,30 +1486,37 @@ function openTasksModal(disciplinaId) {
     modal.setAttribute('data-modal', 'tasks');
     modal.innerHTML = `
         <div class="modal-content modal-tasks-content">
-            <button class="close-btn close-tasks-modal" style="position:absolute;top:10px;right:16px;font-size:2em;background:none;border:none;cursor:pointer;">&times;</button>
+            <div class="modal-header" style="position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;">
+                <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center;">
+                    <h3 style="margin: 0;">Tarefas</h3>
+                    <button class="add-new-task-button" style="padding: 8px 16px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;">➕ Adicionar Nova Tarefa</button>
+                </div>
+                <button class="close-btn close-tasks-modal" style="position:absolute;top:16px;right:16px;font-size:1.5em;background:none;border:none;cursor:pointer;">×</button>
+            </div>
             <div id="tasks-modal-table">Carregando tarefas...</div>
         </div>
     `;
     document.body.appendChild(modal);
     
-    // Adiciona classe show para tornar o modal visível
+    // Adiciona evento ao botão de nova tarefa
+    const addTaskButton = modal.querySelector('.add-new-task-button');
+    if (addTaskButton) {
+        addTaskButton.onclick = () => handleCreateTask(disciplinaId);
+    }
+    
     setTimeout(() => modal.classList.add('show'), 10);
     
-    // Fecha ao clicar fora
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             closeTasksModal(modal);
         }
     });
     
-    // Fecha ao clicar no botão X
     modal.querySelector('.close-tasks-modal').onclick = () => closeTasksModal(modal);
     
-    // Busca e renderiza as tarefas
     fetchTasksForModal(disciplinaId, modal.querySelector('#tasks-modal-table'));
 }
 
-// Função para fechar o modal de tarefas
 function closeTasksModal(modal) {
     modal.classList.remove('show');
     setTimeout(() => {
@@ -1240,7 +1525,7 @@ function closeTasksModal(modal) {
         }
     }, 200);
 }
-// Função para buscar e renderizar tarefas no modal
+
 async function fetchTasksForModal(disciplinaId, container) {
     if (!container) {
         console.error('Container não encontrado para renderizar tarefas');
@@ -1272,16 +1557,12 @@ async function fetchTasksForModal(disciplinaId, container) {
             container.innerHTML = `
                 <h2 style='text-align:center;'>Tarefas</h2>
                 <div style='color:var(--danger-color); text-align:center; margin-bottom:16px;'>Nenhuma tarefa encontrada para esta disciplina.</div>
-                <div style='text-align:center;'><button class='add-new-task-btn'>➕ Nova Tarefa</button></div>
             `;
-            const addBtn = container.querySelector('.add-new-task-btn');
-            if (addBtn) addBtn.onclick = () => handleCreateTaskModal(disciplinaId, container);
             return;
         }
         
         container.innerHTML = renderTasksTableForModal(tasks, disciplinaId);
         
-        // Adiciona eventos CRUD
         container.querySelectorAll('.edit-task-btn').forEach(btn => {
             btn.onclick = () => handleEditTaskModal(btn.dataset.id, disciplinaId, container);
         });
@@ -1298,7 +1579,7 @@ async function fetchTasksForModal(disciplinaId, container) {
         container.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Erro inesperado ao carregar tarefas.</div>`;
     }
 }
-// Função para renderizar tabela de tarefas no modal (reutiliza lógica de ordenação e status)
+
 function renderTasksTableForModal(tasks, disciplinaId) {
     const statusOrder = { 'pendente': 0, 'em andamento': 1, 'concluída': 2 };
     tasks = tasks.slice().sort((a, b) => {
@@ -1334,7 +1615,7 @@ function renderTasksTableForModal(tasks, disciplinaId) {
                         <td>${task.data_fim || ''}</td>
                         <td class="task-status ${task.situacao === 'pendente' ? 'status-pendente' : task.situacao === 'em andamento' ? 'status-andamento' : task.situacao === 'concluída' ? 'status-concluida' : ''}">
                             ${task.situacao || ''}
-                            ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">&#128276;</span>' : ''}
+                            ${shouldShowBell(task) ? '<span class="alert-bell" title="Faltam 10 dias ou menos!">🔔</span>' : ''}
                         </td>
                         <td>
                             <button class='edit-task-btn' data-id='${task.id}'>✏️</button>
@@ -1344,10 +1625,10 @@ function renderTasksTableForModal(tasks, disciplinaId) {
                 `).join('')}
             </tbody>
         </table>`;
-    html += `<div style='text-align:center;'><button class='add-new-task-btn'>➕ Nova Tarefa</button></div>`;
+    // Botão 'Nova Tarefa' removido conforme solicitado
     return html;
 }
-// Funções CRUD para o modal de tarefas
+
 function handleCreateTaskModal(disciplinaId, container) {
     const userId = localStorage.getItem('user_id');
     const today = new Date();
@@ -1380,6 +1661,7 @@ function handleCreateTaskModal(disciplinaId, container) {
         }
     });
 }
+
 function handleEditTaskModal(id, disciplinaId, container) {
     supabase.from('tasks').select('*').eq('id', id).single().then(({ data: item, error }) => {
         if (error) return alert('Erro ao buscar tarefa para edição.');
@@ -1406,6 +1688,7 @@ function handleEditTaskModal(id, disciplinaId, container) {
         });
     });
 }
+
 function handleDeleteTaskModal(id, disciplinaId, container) {
     showConfirmModal('Tem certeza que deseja excluir esta tarefa?', () => {
         supabase.from('tasks').delete().eq('id', id).then(() => {
@@ -1413,3 +1696,34 @@ function handleDeleteTaskModal(id, disciplinaId, container) {
         });
     });
 }
+
+// Movendo função handleCreateTask para o escopo global
+async function handleCreateTask(disciplinaId) {
+    const userId = localStorage.getItem('user_id');
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    const todayStr = `${yyyy}-${mm}-${dd}`;
+    createCrudModal({
+        title: 'Nova Tarefa',
+        formFields: getCrudConfig('tasks').fields,
+        initialData: { id_disciplina: disciplinaId, id_usuario: userId, data_inicio: todayStr },
+        onSubmit: async (data) => {
+            if (!data.nome || !data.data_fim || !data.situacao) {
+                alert('Preencha todos os campos obrigatórios.');
+                return;
+            }
+            await supabase.from('tasks').insert([{
+                id_disciplina: disciplinaId,
+                id_usuario: userId,
+                data_inicio: todayStr,
+                data_fim: data.data_fim,
+                situacao: data.situacao,
+                nome: data.nome
+            }]);
+            await fetchTasksForModal(disciplinaId, document.querySelector('#tasks-modal-table'));
+        }
+    });
+}
+

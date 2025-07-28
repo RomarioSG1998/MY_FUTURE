@@ -34,7 +34,7 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
                 <div class="modal-header" style="position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;">
                     <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 style="margin: 0;">${title}</h3>
-                        <button class="add-new-button" style="padding: 8px 16px; border: none; background: #007bff; color: white; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 4px;">➕ Adicionar Novo</button>
+                        
                     </div>
                     <button class="close-btn" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">×</button>
                 </div>
@@ -185,6 +185,22 @@ function getCrudConfig(type) {
                  ]},
                 { name: 'texto', type: 'textarea', placeholder: 'Descrição da prática' },
                 { name: 'link', type: 'text', placeholder: 'Link (Opcional)' },
+            ]
+        },
+        disciplina: {
+            label: 'Disciplina',
+            fields: [
+                { name: 'nome', type: 'text', placeholder: 'Nome da disciplina' },
+                { name: 'date_inicio', type: 'date', placeholder: 'Data de início' },
+                { name: 'situation', type: 'select', options: [
+                    { value: 'estudando', label: 'Estudando' },
+                    { value: 'finalizado', label: 'Finalizado' }
+                ], placeholder: 'Situação' },
+                { name: 'date_fim', type: 'date', placeholder: 'Data de fim' },
+                { name: 'tipo_disciplina', type: 'select', options: [
+                    { value: 'normal', label: 'Normal' },
+                    { value: 'idioma', label: 'Idioma' }
+                ], placeholder: 'Tipo da Disciplina' }
             ]
         },
         tasks: {
@@ -609,8 +625,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive)
-        const estudando = disciplinas.filter(d => (d.situation || '').toLowerCase() === 'estudando');
+        // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive) e tipo_disciplina === 'normal'
+        const estudando = disciplinas.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'normal');
 
         if (estudando.length === 0) {
             elements.dashboardDisciplinas.innerHTML = '<div>Nenhuma disciplina em estudo.</div>';
@@ -631,6 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="progress-label">${diasEstudados}/${totalDias} dias</div>
                         <div class="card-disciplina-situation">${d.situation || ''}</div>
+                        <div class="card-disciplina-type">${d.tipo_disciplina || ''}</div>
                         <div class="card-disciplina-actions">
                             <button class="btn-tasks" data-id="${d.id}" title="Gerenciar Tarefas">✅ Ver Tarefas</button>
                         </div>
@@ -829,8 +846,8 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Nenhuma disciplina encontrada.</div>';
             return;
         }
-        // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive)
-        const estudando = data.filter(d => (d.situation || '').toLowerCase() === 'estudando');
+        // Filtra apenas as disciplinas com situation === 'estudando' e tipo_disciplina === 'normal'
+        const estudando = data.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'normal');
         if (estudando.length === 0) {
             elements.pizzaContainer.innerHTML = '<div style="text-align:center;">Nenhuma disciplina em estudo.</div>';
             return;
@@ -872,11 +889,13 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Erro ao carregar disciplinas.</div>';
             return;
         }
-        if (data.length === 0) {
+        // Filtra apenas disciplinas do tipo 'normal'
+        const dataNormal = data.filter(d => (d.tipo_disciplina || '').toLowerCase() === 'normal');
+        if (dataNormal.length === 0) {
             elements.pizzaContainer.innerHTML = '<div style="text-align:center;">Nenhuma disciplina encontrada.</div>';
         } else {
             // Ordena: estudando no topo
-            data.sort((a, b) => {
+            dataNormal.sort((a, b) => {
                 const aEst = (a.situation || '').toLowerCase() === 'estudando' ? 0 : 1;
                 const bEst = (b.situation || '').toLowerCase() === 'estudando' ? 0 : 1;
                 return aEst - bEst;
@@ -890,17 +909,19 @@ document.addEventListener('DOMContentLoaded', () => {
                             <th>Data Início</th>
                             <th>Situação</th>
                             <th>Data Fim</th>
+                            <th>Tipo</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
-                        ${data.map(d => `
+                        ${dataNormal.map(d => `
                             <tr${((d.situation || '').toLowerCase() !== 'estudando') ? ' style="background:#d4edda;"' : ''}>
                                 <td>${d.id}</td>
                                 <td>${d.nome}</td>
                                 <td>${d.date_inicio || ''}</td>
                                 <td>${d.situation || ''}</td>
                                 <td>${d.date_fim || ''}</td>
+                                <td>${d.tipo_disciplina || ''}</td>
                                 <td>
                                     <button class="edit-disciplina-btn" data-id="${d.id}">✏️</button>
                                     <button class="delete-disciplina-btn" data-id="${d.id}">🗑️</button>
@@ -1047,32 +1068,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function openDisciplinaCrudModal(mode, id = null) {
-        const fields = [
-            { name: 'nome', type: 'text', placeholder: 'Nome da disciplina' },
-            { name: 'date_inicio', type: 'date', placeholder: 'Data de início' },
-            { name: 'situation', type: 'select', options: [
-                { value: 'estudando', label: 'Estudando' },
-                { value: 'finalizado', label: 'Finalizado' }
-            ], placeholder: 'Situação' },
-            { name: 'date_fim', type: 'date', placeholder: 'Data de fim' }
-        ];
+        const fields = getCrudConfig('disciplina').fields;
         if (mode === 'create') {
             const userId = localStorage.getItem('user_id');
             createCrudModal({
                 title: 'Nova Disciplina',
                 formFields: fields,
                 onSubmit: async (data) => {
-                    if (!data.nome || !data.date_inicio || !data.situation || !data.date_fim) {
-                        alert('Preencha todos os campos obrigatórios.');
-                        return;
-                    }
-                    await supabase.from('disciplina').insert([{
-                        id_usuario: userId,
-                        nome: data.nome,
-                        date_inicio: data.date_inicio,
-                        date_fim: data.date_fim,
-                        situation: data.situation
-                    }]);
+                                    if (!data.nome || !data.date_inicio || !data.situation || !data.date_fim || !data.tipo_disciplina) {
+                    alert('Preencha todos os campos obrigatórios.');
+                    return;
+                }
+                await supabase.from('disciplina').insert([{
+                    id_usuario: userId,
+                    nome: data.nome,
+                    date_inicio: data.date_inicio,
+                    date_fim: data.date_fim,
+                    situation: data.situation,
+                    tipo_disciplina: data.tipo_disciplina
+                }]);
                     renderDisciplinaListInModal();
                 }
             });
@@ -1087,7 +1101,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             nome: data.nome,
                             date_inicio: data.date_inicio,
                             date_fim: data.date_fim,
-                            situation: data.situation
+                            situation: data.situation,
+                            tipo_disciplina: data.tipo_disciplina
                         }).eq('id', id);
                         renderDisciplinaListInModal();
                     }
@@ -1302,10 +1317,7 @@ async function fetchTasksForModal(disciplinaId, container) {
             container.innerHTML = `
                 <h2 style='text-align:center;'>Tarefas</h2>
                 <div style='color:var(--danger-color); text-align:center; margin-bottom:16px;'>Nenhuma tarefa encontrada para esta disciplina.</div>
-                <div style='text-align:center;'><button class='add-new-task-btn'>➕ Nova Tarefa</button></div>
             `;
-            const addBtn = container.querySelector('.add-new-task-btn');
-            if (addBtn) addBtn.onclick = () => handleCreateTaskModal(disciplinaId, container);
             return;
         }
         
@@ -1474,3 +1486,4 @@ async function handleCreateTask(disciplinaId) {
         }
     });
 }
+
