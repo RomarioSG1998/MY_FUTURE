@@ -698,6 +698,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         renderContent();
+        
+        // Carrega e aplica anotações após renderizar o conteúdo
+        if (type === 'text') {
+            await loadAndApplyAnnotations(disciplinaId);
+        }
+        
         elements.extraContentMenu.classList.add('hidden');
     }
 
@@ -1227,6 +1233,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INICIALIZAÇÃO DA APLICAÇÃO ---
     protectPage();
     loadDashboard();
+    
+    // Inicializa a funcionalidade de anotação
+    initAnnotationFeature();
 
     // Adiciona funções ao escopo global para serem chamadas pelo HTML e outras funções
     window.goBackToDashboard = showDashboard;
@@ -1487,3 +1496,609 @@ async function handleCreateTask(disciplinaId) {
     });
 }
 
+// --- FUNCIONALIDADE DE ANOTAÇÃO DE TEXTO ---
+
+let annotationPopup = null;
+let currentSelection = null;
+
+/**
+ * Inicializa o recurso de anotação, adicionando o listener de eventos.
+ */
+function initAnnotationFeature() {
+    document.addEventListener('mouseup', handleTextSelection);
+}
+
+/**
+ * Lida com a seleção de texto pelo usuário.
+ * @param {MouseEvent} e - O evento do mouse.
+ */
+function handleTextSelection(e) {
+    // Verifica se o clique foi dentro do modal de anotação
+    if (e.target.closest('#annotation-popup')) {
+        return;
+    }
+    
+    // Atraso para garantir que a seleção foi finalizada
+    setTimeout(() => {
+        const selection = window.getSelection();
+        const selectedText = selection.toString().trim();
+
+        // Remove pop-up anterior se existir
+        if (annotationPopup) {
+            annotationPopup.remove();
+            annotationPopup = null;
+        }
+
+        // Verifica se há texto selecionado e se a seleção está dentro do #content-view
+        if (selectedText.length > 0 && selection.anchorNode && document.getElementById('content-view').contains(selection.anchorNode.parentElement)) {
+            currentSelection = selection.getRangeAt(0).cloneRange();
+            
+            // Verifica se o texto selecionado já tem destaque
+            const range = selection.getRangeAt(0);
+            const startContainer = range.startContainer;
+            const endContainer = range.endContainer;
+            
+            // Verifica se a seleção está dentro de um elemento com classe 'annotated-text'
+            let hasExistingAnnotation = false;
+            let existingAnnotation = null;
+            
+            // Verifica se o nó inicial está dentro de uma anotação
+            if (startContainer.nodeType === Node.TEXT_NODE) {
+                const parentSpan = startContainer.parentElement;
+                if (parentSpan && parentSpan.classList.contains('annotated-text')) {
+                    hasExistingAnnotation = true;
+                    existingAnnotation = {
+                        element: parentSpan,
+                        text: parentSpan.textContent,
+                        css: parentSpan.style.cssText,
+                        comment: parentSpan.title || ''
+                    };
+                }
+            }
+            
+            // Se não encontrou no início, verifica se o nó final está dentro de uma anotação
+            if (!hasExistingAnnotation && endContainer.nodeType === Node.TEXT_NODE) {
+                const parentSpan = endContainer.parentElement;
+                if (parentSpan && parentSpan.classList.contains('annotated-text')) {
+                    hasExistingAnnotation = true;
+                    existingAnnotation = {
+                        element: parentSpan,
+                        text: parentSpan.textContent,
+                        css: parentSpan.style.cssText,
+                        comment: parentSpan.title || ''
+                    };
+                }
+            }
+            
+            if (hasExistingAnnotation && existingAnnotation) {
+                // Marca o elemento que está sendo editado
+                existingAnnotation.element.setAttribute('data-editing', 'true');
+            }
+            createAnnotationPopup(e.clientX, e.clientY, hasExistingAnnotation, existingAnnotation);
+        }
+    }, 10);
+}
+
+/**
+ * Cria e exibe o pop-up de anotação na tela.
+ * @param {number} x - Posição X do mouse.
+ * @param {number} y - Posição Y do mouse.
+ */
+function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnnotation = null) {
+    annotationPopup = document.createElement('div');
+    annotationPopup.id = 'annotation-popup';
+    
+    // Armazena o texto selecionado para uso posterior
+    const selection = window.getSelection();
+    const selectedText = selection.toString().trim();
+    
+    // Determina o título e botões baseado se já existe anotação
+    const title = hasExistingAnnotation ? 'Editar Destaque' : 'Destacar Texto';
+    const saveButtonText = hasExistingAnnotation ? 'Atualizar' : 'Salvar';
+    const removeButton = hasExistingAnnotation ? '<button id="remove-annotation" class="btn-remove">🗑️ Remover</button>' : '';
+    
+    annotationPopup.innerHTML = `
+        <div class="popup-header">
+            <h3>${title}</h3>
+            <button class="close-popup-btn">×</button>
+        </div>
+        <div class="selected-text-data" style="display: none;" data-selected-text="${selectedText}"></div>
+        <div class="popup-body">
+            <div class="annotation-section">
+                <label for="annotation-comment">Comentário:</label>
+                <textarea id="annotation-comment" placeholder="Adicione um comentário sobre este texto...">${hasExistingAnnotation ? existingAnnotation.comment : ''}</textarea>
+            </div>
+            
+            <div class="annotation-section">
+                <label for="annotation-css">Estilo CSS:</label>
+                <input type="text" id="annotation-css" placeholder="Selecione um estilo rápido acima ou digite CSS personalizado" value="${hasExistingAnnotation ? existingAnnotation.css : ''}">
+            </div>
+            
+            <div class="annotation-section">
+                <label>Estilos Rápidos:</label>
+                <div class="quick-styles">
+                    <button class="quick-style-btn" data-style="background-color: yellow; color: black;">🟡 Destaque</button>
+                    <button class="quick-style-btn" data-style="background-color: #ff6b6b; color: white;">🔴 Importante</button>
+                                               <button class="quick-style-btn" data-style="background-color: #4ecdc4; color: white;">🟢 Conceito</button>
+                           <button class="quick-style-btn" data-style="background-color: #45b7d1; color: white;">🔵 Definição</button>
+                           <button class="quick-style-btn" data-style="font-weight: bold; color: black;">⚫ Negrito</button>
+                           <button class="quick-style-btn" data-style="font-style: italic; color: black;">📝 Itálico</button>
+                </div>
+            </div>
+            
+            <div class="ai-explanation">
+                <h4>🤖 Explicação IA</h4>
+                <p class="explanation-text"></p>
+            </div>
+        </div>
+        <div class="popup-footer">
+            <div class="footer-right">
+                <button id="ai-explain-btn" class="btn-ai-explain">🤖 Explicar IA</button>
+                <button id="cancel-annotation" class="btn-cancel">Cancelar</button>
+                ${removeButton}
+                <button id="save-annotation" class="btn-save">${saveButtonText}</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(annotationPopup);
+
+    // Posiciona o pop-up perto da seleção, mas dentro da viewport
+    const rect = annotationPopup.getBoundingClientRect();
+    let left = x;
+    let top = y + window.scrollY;
+    
+    // Ajusta posição se estiver fora da viewport
+    if (left + rect.width > window.innerWidth) {
+        left = window.innerWidth - rect.width - 10;
+    }
+    if (top + rect.height > window.innerHeight + window.scrollY) {
+        top = y + window.scrollY - rect.height - 10;
+    }
+    
+    annotationPopup.style.left = `${Math.max(10, left)}px`;
+    annotationPopup.style.top = `${Math.max(10, top)}px`;
+
+    // Adiciona eventos aos botões do pop-up
+    document.getElementById('save-annotation').onclick = saveAnnotation;
+    document.getElementById('cancel-annotation').onclick = () => annotationPopup.remove();
+    document.querySelector('.close-popup-btn').onclick = () => annotationPopup.remove();
+    
+    // Adiciona evento para o botão de remover (se existir)
+    const removeBtn = document.getElementById('remove-annotation');
+    if (removeBtn) {
+        removeBtn.onclick = removeAnnotation;
+    }
+    
+    // Fecha o modal quando clicar fora dele
+    document.addEventListener('click', function closeModalOnOutsideClick(e) {
+        if (annotationPopup && !annotationPopup.contains(e.target)) {
+            annotationPopup.remove();
+            document.removeEventListener('click', closeModalOnOutsideClick);
+        }
+    });
+    
+    // Adiciona eventos aos botões de estilo rápido
+    document.querySelectorAll('.quick-style-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const style = btn.dataset.style;
+            const cssInput = document.getElementById('annotation-css');
+            cssInput.value = style;
+            cssInput.classList.add('filled');
+            
+            // Feedback visual - destaca o botão selecionado
+            document.querySelectorAll('.quick-style-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            
+            // Foca no campo CSS para mostrar que foi preenchido
+            cssInput.focus();
+            
+            // Remove a seleção após 1 segundo
+            setTimeout(() => {
+                btn.classList.remove('selected');
+            }, 1000);
+            
+            console.log('Estilo aplicado:', style); // Debug
+        };
+    });
+    
+    // Adiciona evento ao botão de IA
+    const aiExplainBtn = document.getElementById('ai-explain-btn');
+    if (aiExplainBtn) {
+        aiExplainBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            generateAIExplanation();
+        };
+    }
+    
+    // Foca no textarea
+    document.getElementById('annotation-comment').focus();
+    
+    // Adiciona evento para detectar mudanças no campo CSS
+    const cssInput = document.getElementById('annotation-css');
+    cssInput.addEventListener('input', function() {
+        if (this.value.trim()) {
+            this.classList.add('filled');
+        } else {
+            this.classList.remove('filled');
+        }
+    });
+    
+    // Inicializa a funcionalidade de arrastar o modal
+    initDragModal(annotationPopup);
+}
+
+/**
+ * Inicializa a funcionalidade de arrastar o modal.
+ * @param {HTMLElement} modal - O elemento do modal a ser arrastado.
+ */
+function initDragModal(modal) {
+    let isDragging = false;
+    let startX, startY, initialLeft, initialTop;
+    
+    const header = modal.querySelector('.popup-header');
+    
+    // Função para iniciar o arraste
+    function startDrag(e) {
+        // Previne o arraste se clicar no botão de fechar
+        if (e.target.classList.contains('close-popup-btn')) {
+            return;
+        }
+        
+        isDragging = true;
+        modal.classList.add('dragging');
+        
+        // Captura a posição inicial do mouse
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        // Captura a posição inicial do modal
+        const rect = modal.getBoundingClientRect();
+        initialLeft = rect.left;
+        initialTop = rect.top;
+        
+        // Previne seleção de texto durante o arraste
+        e.preventDefault();
+        
+        // Adiciona listeners para o arraste
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', stopDrag);
+        
+        // Adiciona listener para tecla ESC
+        document.addEventListener('keydown', handleEscape);
+    }
+    
+    // Função para arrastar
+    function drag(e) {
+        if (!isDragging) return;
+        
+        // Calcula a nova posição
+        const deltaX = e.clientX - startX;
+        const deltaY = e.clientY - startY;
+        
+        const newLeft = initialLeft + deltaX;
+        const newTop = initialTop + deltaY;
+        
+        // Limita o modal dentro da viewport
+        const rect = modal.getBoundingClientRect();
+        const maxLeft = window.innerWidth - rect.width;
+        const maxTop = window.innerHeight - rect.height;
+        
+        const clampedLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        const clampedTop = Math.max(0, Math.min(newTop, maxTop));
+        
+        // Aplica a nova posição
+        modal.style.left = `${clampedLeft}px`;
+        modal.style.top = `${clampedTop}px`;
+    }
+    
+    // Função para parar o arraste
+    function stopDrag() {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        modal.classList.remove('dragging');
+        
+        // Remove os listeners
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', stopDrag);
+        document.removeEventListener('keydown', handleEscape);
+    }
+    
+    // Função para lidar com a tecla ESC
+    function handleEscape(e) {
+        if (e.key === 'Escape') {
+            stopDrag();
+        }
+    }
+    
+    // Adiciona o listener para iniciar o arraste no header
+    header.addEventListener('mousedown', startDrag);
+}
+
+/**
+ * Salva a anotação no Supabase e aplica o estilo.
+ */
+async function saveAnnotation() {
+    if (!currentSelection) return;
+
+    const comment = document.getElementById('annotation-comment').value;
+    const css = document.getElementById('annotation-css').value;
+    const selectedText = currentSelection.toString();
+    const isEditing = document.getElementById('remove-annotation') !== null; // Verifica se está editando
+
+    if (!css.trim()) {
+        alert('Por favor, selecione um estilo rápido ou digite CSS personalizado antes de salvar.');
+        return;
+    }
+
+    try {
+        if (isEditing) {
+            // Modo de edição - atualiza a anotação existente
+            const existingSpan = document.querySelector('.annotated-text[data-editing="true"]');
+            if (existingSpan) {
+                existingSpan.style.cssText = css;
+                existingSpan.title = comment;
+                existingSpan.removeAttribute('data-editing');
+                
+                // Feedback visual de sucesso
+                existingSpan.style.animation = 'annotationSaved 0.5s ease-in-out';
+                setTimeout(() => {
+                    existingSpan.style.animation = '';
+                }, 500);
+            }
+        } else {
+            // Modo de criação - cria nova anotação
+            const span = document.createElement('span');
+            span.className = 'annotated-text';
+            span.style.cssText = css;
+            span.title = comment;
+            span.dataset.annotationId = Date.now();
+            
+            // Método mais robusto para envolver o conteúdo
+            span.appendChild(currentSelection.extractContents());
+            currentSelection.insertNode(span);
+            
+            // 2. Prepara os dados para o Supabase
+            const annotationData = {
+                text_marcado: selectedText,
+                text_comentario: comment,
+                css: css,
+                id_disciplina: window.appState.currentDisciplinaId,
+            };
+
+            // 3. Insere no Supabase
+            const { error } = await supabase.from('css_coment_table').insert([annotationData]);
+
+            if (error) {
+                console.error('Erro ao salvar anotação:', error);
+                alert('Falha ao salvar a anotação: ' + error.message);
+                // Reverter a alteração no DOM em caso de erro
+                span.parentNode.insertBefore(document.createTextNode(selectedText), span);
+                span.remove();
+                return;
+            }
+
+            // 4. Feedback visual de sucesso
+            span.style.animation = 'annotationSaved 0.5s ease-in-out';
+            setTimeout(() => {
+                span.style.animation = '';
+            }, 500);
+        }
+
+    } catch (e) {
+        console.error("Erro ao manipular o DOM com a seleção:", e);
+        alert("Não foi possível aplicar a anotação. A seleção pode ser muito complexa (ex: cruzar múltiplos parágrafos). Tente selecionar um trecho menor e contínuo.");
+    } finally {
+        // 5. Limpa e remove o pop-up
+        if (annotationPopup) annotationPopup.remove();
+        currentSelection = null;
+        window.getSelection().removeAllRanges();
+    }
+}
+
+/**
+ * Remove a anotação existente.
+ */
+async function removeAnnotation() {
+    try {
+        // Encontra o span da anotação existente
+        const existingSpan = document.querySelector('.annotated-text[data-editing="true"]');
+        if (!existingSpan) {
+            alert("Nenhuma anotação encontrada para remover.");
+            return;
+        }
+
+        const textContent = existingSpan.textContent;
+        const disciplinaId = window.appState.currentDisciplinaId;
+
+        // Remove do banco de dados
+        const { error } = await supabase
+            .from('css_coment_table')
+            .delete()
+            .eq('id_disciplina', disciplinaId)
+            .eq('text_marcado', textContent);
+
+        if (error) {
+            console.error("Erro ao remover do banco de dados:", error);
+            alert("Erro ao remover a anotação do banco de dados.");
+            return;
+        }
+
+        // Remove o span e mantém apenas o texto
+        const textNode = document.createTextNode(existingSpan.textContent);
+        existingSpan.parentNode.replaceChild(textNode, existingSpan);
+        
+        // Feedback visual
+        textNode.style.animation = 'annotationRemoved 0.5s ease-in-out';
+        setTimeout(() => {
+            textNode.style.animation = '';
+        }, 500);
+
+        // Feedback de sucesso
+        alert("Anotação removida com sucesso!");
+        
+    } catch (e) {
+        console.error("Erro ao remover anotação:", e);
+        // Não mostra alerta genérico, pois o erro pode ser não crítico
+    } finally {
+        // Limpa e remove o pop-up
+        if (annotationPopup) annotationPopup.remove();
+        currentSelection = null;
+        window.getSelection().removeAllRanges();
+    }
+}
+
+/**
+ * Carrega as anotações do Supabase e as aplica no conteúdo da página.
+ * @param {number} disciplinaId - O ID da disciplina atual.
+ */
+async function loadAndApplyAnnotations(disciplinaId) {
+    if (!disciplinaId) return;
+    
+    const { data, error } = await supabase
+        .from('css_coment_table')
+        .select('*')
+        .eq('id_disciplina', disciplinaId);
+
+    if (error) {
+        console.error('Erro ao carregar anotações:', error);
+        return;
+    }
+
+    const contentView = document.getElementById('content-view');
+    if (!contentView || !data || data.length === 0) return;
+
+    // Cria um elemento temporário para manipular o HTML de forma mais segura
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = contentView.innerHTML;
+
+    data.forEach(annotation => {
+        if (!annotation.text_marcado || !annotation.css) return;
+        
+        // Função para processar nós de texto recursivamente
+        function processTextNodes(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = node.textContent;
+                const searchText = annotation.text_marcado;
+                
+                if (text.includes(searchText)) {
+                    const parts = text.split(searchText);
+                    const fragment = document.createDocumentFragment();
+                    
+                    parts.forEach((part, index) => {
+                        if (part) {
+                            fragment.appendChild(document.createTextNode(part));
+                        }
+                        if (index < parts.length - 1) {
+                            const span = document.createElement('span');
+                            span.className = 'annotated-text';
+                            span.style.cssText = annotation.css;
+                            span.title = annotation.text_comentario || '';
+                            span.textContent = searchText;
+                            fragment.appendChild(span);
+                        }
+                    });
+                    
+                    node.parentNode.replaceChild(fragment, node);
+                    return true; // Indica que houve mudança
+                }
+            } else if (node.nodeType === Node.ELEMENT_NODE) {
+                // Não processa elementos que já são anotações
+                if (node.classList.contains('annotated-text')) {
+                    return false;
+                }
+                
+                // Processa filhos recursivamente
+                const children = Array.from(node.childNodes);
+                children.forEach(child => {
+                    processTextNodes(child);
+                });
+            }
+            return false;
+        }
+        
+        // Processa todo o conteúdo
+        processTextNodes(tempDiv);
+    });
+
+    contentView.innerHTML = tempDiv.innerHTML;
+}
+
+/**
+ * Gera explicação da IA para o texto selecionado
+ */
+async function generateAIExplanation() {
+    // Obtém o texto selecionado armazenado no modal
+    const selectedTextData = document.querySelector('.selected-text-data');
+    const selectedText = selectedTextData ? selectedTextData.getAttribute('data-selected-text') : '';
+    
+    const aiExplanationDiv = document.querySelector('.ai-explanation');
+    const explanationText = aiExplanationDiv.querySelector('.explanation-text');
+    const aiExplainBtn = document.getElementById('ai-explain-btn');
+    
+    if (!selectedText) {
+        alert('Por favor, selecione um texto primeiro.');
+        return;
+    }
+    
+    // Mostra loading
+    aiExplanationDiv.classList.add('show');
+    explanationText.innerHTML = '<div class="loading">Analisando o texto...</div>';
+    aiExplainBtn.disabled = true;
+    
+    try {
+        const explanation = await callAIExplanationAPI(selectedText);
+        explanationText.innerHTML = explanation;
+    } catch (error) {
+        console.error('Erro ao gerar explicação:', error);
+        explanationText.innerHTML = `<p style="color: #dc3545;">Erro ao gerar explicação: ${error.message}</p>`;
+    } finally {
+        aiExplainBtn.disabled = false;
+    }
+}
+
+/**
+ * Chama a API do Gemini para gerar explicação didática
+ */
+async function callAIExplanationAPI(text) {
+    const geminiApiKey = 'AIzaSyAI-H7rdl-aPkxFJZn9FU6hrLlMKVG96ro';
+    
+    if (!geminiApiKey || geminiApiKey === 'SUA_CHAVE_DE_API_VAI_AQUI') {
+        throw new Error("A chave da API não foi configurada.");
+    }
+    
+    const prompt = `
+Atue como um professor especialista e forneça uma explicação didática clara e acessível sobre o seguinte texto/conceito. Sua explicação deve:
+
+1. **Ser clara e simples**: Use linguagem acessível, evitando jargões complexos
+2. **Ser educativa**: Explique o conceito de forma didática, como se estivesse ensinando para um estudante
+3. **Ser contextualizada**: Relacione com exemplos práticos quando possível
+4. **Ser concisa**: Mantenha a explicação objetiva, mas completa
+5. **Ser motivacional**: Incentive o aprendizado e a curiosidade
+
+**Texto para explicar:**
+"""
+${text}
+"""
+
+**Explicação didática:**
+`;
+
+    try {
+        const { GoogleGenerativeAI } = await import('https://esm.run/@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(geminiApiKey);
+        
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        
+        return response.text();
+
+    } catch (error) {
+        console.error("Erro detalhado na chamada da API do Gemini:", error);
+        throw new Error("Falha ao comunicar com a IA. Verifique sua chave de API e a conexão.");
+    }
+}
