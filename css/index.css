@@ -1820,7 +1820,7 @@ body.edit-mode #edit-gear-btn svg path {
     }
     
     /* Melhorar contraste para textos */
-    .card-disciplina-title, .registro-title {
+    .card-disciplina-title {
         font-weight: 600;
     }
     
@@ -2846,17 +2846,19 @@ body.edit-mode #edit-gear-btn svg path {
     background: white;
     border-radius: 12px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-    min-width: 320px;
-    max-width: 600px;
+    width: 90vw;
+    max-width: 900px;
     border: 1px solid #e0e0e0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    -webkit-user-select: none; /* Previne seleção de texto durante o arraste */
-    user-select: none; /* Previne seleção de texto durante o arraste */
+    -webkit-user-select: none;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
 }
 
-/* Estilos para arrastar o modal */
 #annotation-popup.dragging {
-    transition: none; /* Remove transições durante o arraste */
+    transition: none;
     box-shadow: 0 12px 40px rgba(0,0,0,0.3);
 }
 
@@ -2868,30 +2870,8 @@ body.edit-mode #edit-gear-btn svg path {
     border-bottom: 1px solid #eee;
     background: #f8f9fa;
     border-radius: 12px 12px 0 0;
-    cursor: move; /* Indica que pode ser arrastado */
-    -webkit-user-select: none; /* Previne seleção de texto */
-    user-select: none; /* Previne seleção de texto */
-}
-
-#annotation-popup .popup-header:hover {
-    background: #e9ecef;
-}
-
-#annotation-popup .popup-header:active {
-    background: #dee2e6;
-}
-
-/* Indicador visual de que pode ser arrastado */
-#annotation-popup .popup-header::before {
-    content: "⋮⋮";
-    color: #6c757d;
-    font-size: 14px;
-    margin-right: 8px;
-    opacity: 0.6;
-}
-
-#annotation-popup .popup-header:hover::before {
-    opacity: 1;
+    cursor: move;
+    flex-shrink: 0;
 }
 
 #annotation-popup .popup-header h3 {
@@ -2899,8 +2879,6 @@ body.edit-mode #edit-gear-btn svg path {
     font-size: 1.1em;
     color: #333;
     font-weight: 600;
-    flex: 1;
-    margin-left: 8px;
 }
 
 #annotation-popup .close-popup-btn {
@@ -2909,141 +2887,37 @@ body.edit-mode #edit-gear-btn svg path {
     font-size: 1.5em;
     color: #666;
     cursor: pointer;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: all 0.2s ease;
-    z-index: 1; /* Garante que o botão fique acima do header */
-}
-
-@keyframes fadeInPopup {
-    from { opacity: 0; transform: scale(0.9); }
-    to { opacity: 1; transform: scale(1); }
 }
 
 #annotation-popup .popup-body {
+    display: flex;
+    flex-direction: row;
+    padding: 20px;
+    gap: 20px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+#annotation-popup .ai-explanation {
+    flex: 2;
+    min-width: 250px;
     padding: 12px;
+    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+    border: 1px solid #e3e6ff;
+    border-radius: 8px;
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: #495057;
+    overflow-y: auto;
+    max-height: 400px;
+}
+
+#annotation-popup .annotation-controls {
+    flex: 1;
+    min-width: 250px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-}
-
-#annotation-popup .popup-body textarea,
-#annotation-popup .popup-body input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    box-sizing: border-box; /* Garante que padding não afete a largura */
-}
-
-#annotation-popup .popup-body textarea {
-    min-height: 60px;
-    resize: vertical;
-}
-
-#annotation-popup .popup-footer {
-    padding: 8px 12px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    background-color: #f9f9f9;
-    border-top: 1px solid #eee;
-    border-radius: 0 0 8px 8px;
-}
-
-#annotation-popup .popup-footer button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    font-weight: 500;
-}
-
-#annotation-popup #save-annotation {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-}
-#annotation-popup #save-annotation:hover {
-    background-color: #0056b3;
-}
-
-#annotation-popup #cancel-annotation {
-    background-color: #f1f1f1;
-    color: #333;
-    border-color: #ccc;
-}
-#annotation-popup #cancel-annotation:hover {
-    background-color: #e1e1e1;
-}
-
-/* Estilo para o texto anotado */
-/* Estilos para o modal de anotação */
-#annotation-popup {
-    position: fixed;
-    z-index: 2147483647;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.25);
-    min-width: 320px;
-    max-width: 450px;
-    border: 1px solid #e0e0e0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-#annotation-popup .popup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #eee;
-    background: #f8f9fa;
-    border-radius: 12px 12px 0 0;
-}
-
-#annotation-popup .popup-header h3 {
-    margin: 0;
-    font-size: 1.1em;
-    color: #333;
-    font-weight: 600;
-}
-
-#annotation-popup .close-popup-btn {
-    background: none;
-    border: none;
-    font-size: 1.5em;
-    color: #666;
-    cursor: pointer;
-    padding: 0;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background-color 0.2s;
-}
-
-#annotation-popup .close-popup-btn:hover {
-    background-color: #e0e0e0;
-}
-
-#annotation-popup .popup-body {
-    padding: 20px;
-}
-
-#annotation-popup .annotation-section {
-    margin-bottom: 16px;
-}
-
-#annotation-popup .annotation-section:last-child {
-    margin-bottom: 0;
+    gap: 16px;
 }
 
 #annotation-popup .annotation-section label {
@@ -3071,11 +2945,6 @@ body.edit-mode #edit-gear-btn svg path {
     outline: none;
     border-color: #007bff;
     box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
-}
-
-#annotation-popup .annotation-section textarea {
-    resize: vertical;
-    min-height: 80px;
 }
 
 #annotation-popup .quick-styles {
@@ -3110,18 +2979,26 @@ body.edit-mode #edit-gear-btn svg path {
 }
 
 #annotation-popup .popup-footer {
-    display: flex;
-    gap: 12px;
     padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background-color: #f9f9f9;
     border-top: 1px solid #eee;
-    background: #f8f9fa;
     border-radius: 0 0 12px 12px;
+    flex-shrink: 0;
+}
+
+#annotation-popup .footer-right {
+    display: flex;
+    gap: 8px;
 }
 
 #annotation-popup .btn-cancel,
-#annotation-popup .btn-save {
-    flex: 1;
-    padding: 12px 16px;
+#annotation-popup .btn-save,
+#annotation-popup .btn-remove {
+    padding: 10px 20px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -3136,17 +3013,9 @@ body.edit-mode #edit-gear-btn svg path {
     border: 1px solid #ddd;
 }
 
-#annotation-popup .btn-cancel:hover {
-    background: #e9ecef;
-}
-
 #annotation-popup .btn-save {
     background: #007bff;
     color: white;
-}
-
-#annotation-popup .btn-save:hover {
-    background: #0056b3;
 }
 
 #annotation-popup .btn-remove {
@@ -3154,124 +3023,12 @@ body.edit-mode #edit-gear-btn svg path {
     color: white;
 }
 
-#annotation-popup .btn-remove:hover {
-    background: #c82333;
-}
-
-/* Estilos para texto anotado */
 .annotated-text {
-    cursor: help; /* Mostra um cursor de ajuda ao passar o mouse */
-    border-bottom: 2px dotted #ff9800; /* Linha pontilhada para indicar que há um comentário */
+    cursor: help;
+    border-bottom: 2px dotted #ff9800;
 }
 
-/* Animação para feedback visual quando anotação é salva */
-@keyframes annotationSaved {
-    0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
-    }
-    50% {
-        transform: scale(1.05);
-        box-shadow: 0 0 0 10px rgba(0, 123, 255, 0.3);
-    }
-    100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
-    }
-}
-
-/* Estilos responsivos para o modal de anotação */
-@media (max-width: 768px) {
-    #annotation-popup {
-        min-width: 280px;
-        max-width: 90vw;
-        margin: 10px;
-    }
-    
-    #annotation-popup .popup-header {
-        padding: 12px 16px;
-    }
-    
-    #annotation-popup .popup-header h3 {
-        font-size: 1em;
-    }
-    
-    #annotation-popup .popup-body {
-        padding: 16px;
-    }
-    
-    #annotation-popup .annotation-section {
-        margin-bottom: 12px;
-    }
-    
-    #annotation-popup .quick-styles {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6px;
-    }
-    
-    #annotation-popup .quick-style-btn {
-        padding: 6px 8px;
-        font-size: 0.8em;
-    }
-    
-    #annotation-popup .popup-footer {
-        padding: 12px 16px;
-        gap: 8px;
-    }
-    
-    #annotation-popup .btn-cancel,
-    #annotation-popup .btn-save {
-        padding: 10px 12px;
-        font-size: 0.85em;
-    }
-}
-
-@media (max-width: 480px) {
-    #annotation-popup {
-        min-width: 260px;
-        max-width: 95vw;
-    }
-    
-    #annotation-popup .quick-styles {
-        grid-template-columns: 1fr;
-    }
-    
-    #annotation-popup .quick-style-btn {
-        padding: 8px 10px;
-        font-size: 0.85em;
-    }
-}
-
-#annotation-popup .annotation-section input:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
-}
-
-#annotation-popup .annotation-section input.filled {
-    border-color: #28a745;
-    background-color: #f8fff9;
-    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
-}
-
-/* Animação para feedback visual quando anotação é removida */
-@keyframes annotationRemoved {
-    0% {
-        background-color: rgba(220, 53, 69, 0.1);
-        transform: scale(1);
-    }
-    50% {
-        background-color: rgba(220, 53, 69, 0.3);
-        transform: scale(1.02);
-    }
-    100% {
-        background-color: transparent;
-        transform: scale(1);
-    }
-}
-
-/* Estilos para o botão de IA e explicação */
-#annotation-popup .btn-ai-explain {
+.btn-ai-explain {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     display: flex;
@@ -3286,118 +3043,25 @@ body.edit-mode #edit-gear-btn svg path {
     transition: all 0.2s ease;
 }
 
-#annotation-popup .btn-ai-explain:hover {
-    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+.btn-ai-explain:hover {
     transform: translateY(-1px);
 }
 
-#annotation-popup .btn-ai-explain:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-}
-
-#annotation-popup .ai-explanation {
-    margin-top: 15px;
-    padding: 12px;
-    background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
-    border: 1px solid #e3e6ff;
-    border-radius: 8px;
-    font-size: 0.9em;
-    line-height: 1.5;
-    color: #495057;
-    display: none;
-}
-
-#annotation-popup .ai-explanation.show {
+.ai-explanation.show {
     display: block;
-    animation: fadeInUp 0.3s ease;
 }
 
-#annotation-popup .ai-explanation h4 {
-    margin: 0 0 8px 0;
-    color: #667eea;
-    font-size: 1em;
-    font-weight: 600;
-}
-
-#annotation-popup .ai-explanation p {
-    margin: 0;
-}
-
-#annotation-popup .ai-explanation .loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #667eea;
-}
-
-#annotation-popup .ai-explanation .loading::before {
-    content: "";
-    width: 16px;
-    height: 16px;
-    border: 2px solid #e3e6ff;
-    border-top: 2px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* Ajuste do footer para acomodar o botão de IA */
-#annotation-popup .popup-footer {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 10px;
-}
-
-#annotation-popup .popup-footer .footer-left {
-    display: none; /* Remove o footer-left já que o botão de IA vai para o footer-right */
-}
-
-#annotation-popup .popup-footer .footer-right {
-    display: flex;
-    gap: 8px;
-}
-
-/* Responsividade para o botão de IA */
 @media (max-width: 768px) {
-    #annotation-popup .popup-footer {
+    #annotation-popup .popup-body {
         flex-direction: column;
-        gap: 12px;
-        justify-content: center;
     }
-    
-    #annotation-popup .popup-footer .footer-right {
-        width: 100%;
-        justify-content: center;
-        flex-wrap: wrap;
-    }
-    
-    #annotation-popup .btn-ai-explain {
-        font-size: 0.85em;
-        padding: 6px 12px;
-    }
-}
 
-@media (max-width: 480px) {
-    #annotation-popup .btn-ai-explain {
-        font-size: 0.8em;
-        padding: 5px 10px;
+    #annotation-popup .ai-explanation,
+    #annotation-popup .annotation-controls {
+        min-width: 100%;
     }
     
     #annotation-popup .ai-explanation {
-        font-size: 0.85em;
-        padding: 10px;
+        max-height: 200px;
     }
 }

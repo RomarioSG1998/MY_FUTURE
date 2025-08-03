@@ -3,6 +3,99 @@ const SUPABASE_URL = 'https://zzrylgsjksrjotgcwavt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cnlsZ3Nqa3Nyam90Z2N3YXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4Mjc0OTYsImV4cCI6MjA2NDQwMzQ5Nn0.caBlCmOqKonuxTPacPIHH1FeVZFr8AJKwpz_v1Q3BwM';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// --- TEXT-TO-SPEECH ---
+let currentUtterance = null;
+
+/**
+ * Lê um texto em voz alta usando a API de Síntese de Voz do navegador,
+ * buscando a voz mais natural disponível.
+ * @param {string} text - O texto a ser lido.
+ */
+function speakText(text) {
+    // Para qualquer fala anterior para evitar sobreposição
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 1.0; // Velocidade normal para um som mais natural
+    utterance.pitch = 1.0; // Tom normal
+
+    const ttsControlButton = document.getElementById('tts-control-btn');
+
+    utterance.onstart = () => {
+        if (ttsControlButton) ttsControlButton.innerHTML = '🤫'; // Ícone para parar
+    };
+
+    utterance.onend = () => {
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊'; // Ícone para ouvir de novo
+    };
+    
+    utterance.onerror = (event) => {
+        console.error('Erro na síntese de voz:', event.error);
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
+    };
+
+    currentUtterance = utterance;
+
+    const setVoiceAndSpeak = () => {
+        const voices = speechSynthesis.getVoices();
+        if (voices.length === 0) {
+            // Se as vozes ainda não carregaram, fala com a padrão.
+            speechSynthesis.speak(utterance);
+            return;
+        }
+
+        const usVoices = voices.filter(voice => voice.lang === 'en-US');
+        let selectedVoice = null;
+
+        // Prioriza vozes de alta qualidade conhecidas
+        const preferredNames = [/google/i, /natural/i, /zira/i, /samantha/i];
+        for (const name of preferredNames) {
+            selectedVoice = usVoices.find(voice => name.test(voice.name));
+            if (selectedVoice) break;
+        }
+
+        // Se não encontrar, usa a padrão do navegador para o idioma
+        if (!selectedVoice) {
+            selectedVoice = usVoices.find(voice => voice.default);
+        }
+
+        // Como último recurso, pega a primeira voz em inglês disponível
+        if (!selectedVoice && usVoices.length > 0) {
+            selectedVoice = usVoices[0];
+        }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+
+        speechSynthesis.speak(utterance);
+    };
+
+    // A lista de vozes pode carregar de forma assíncrona.
+    // Este é o método mais seguro para garantir que a lista esteja disponível.
+    if (speechSynthesis.getVoices().length > 0) {
+        setVoiceAndSpeak();
+    } else {
+        speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+    }
+}
+
+
+/**
+ * Para a leitura de texto que está em andamento.
+ */
+function stopSpeaking() {
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+    const ttsControlButton = document.getElementById('tts-control-btn');
+    if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
+}
+
+
 // Função global para gerenciar o arrasto do botão de vídeo
 window.handleVideoButtonDrag = function(event, button) {
     event.preventDefault();
@@ -431,15 +524,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 font-size: 1.08em;
                                 font-weight: 600;
                                 box-shadow: 0 2px 12px rgba(25,118,210,0.10);
-                                cursor: move;
+                                cursor: pointer;
                                 margin-bottom: 0;
                                 transition: background 0.2s, box-shadow 0.2s;
                                 white-space: nowrap;
                                 touch-action: none;
                                 user-select: none;
                             "
-                            onmousedown="handleVideoButtonDrag(event, this)"
-                            ontouchstart="handleVideoButtonDrag(event, this)"
+                            onmousedown="window.handleVideoButtonDrag(event, this)" 
+                            ontouchstart="window.handleVideoButtonDrag(event, this)"
                             onmouseover="this.style.background='linear-gradient(90deg,#1565c0 60%,#5a189a 100%)';this.style.transform='translateX(-50%) translateY(-2px) scale(1.03)';this.style.boxShadow='0 4px 18px rgba(25,118,210,0.18)';"
                             onmouseout="this.style.background='linear-gradient(90deg,#1976d2 60%,#764ba2 100%)';this.style.transform='translateX(-50%)';this.style.boxShadow='0 2px 12px rgba(25,118,210,0.10)';"
                         >
@@ -480,13 +573,9 @@ document.addEventListener('DOMContentLoaded', () => {
             contentHtml += `<div style="text-align:center; margin-top:20px;"><button class="add-new-content-btn">➕ Adicionar Novo ${currentContentType}</button></div>`;
         }
         elements.contentView.innerHTML = contentHtml;
+        
         elements.contentView.classList.toggle('videos-mode', currentContentType === 'video');
-        // Evento para abrir modal móvel/redimensionável do vídeo
-        if (currentContentType === 'video_text') {
-            elements.contentView.querySelectorAll('.open-video-modal-btn').forEach(btn => {
-                btn.onclick = () => openMovableVideoModal(btn.dataset.link);
-            });
-        }
+        
         if (isEditMode && currentContentType !== 'tasks') {
             elements.contentView.querySelectorAll('.crud-btn.edit').forEach(btn => {
                 const id = btn.closest('.registro').dataset.id;
@@ -499,150 +588,283 @@ document.addEventListener('DOMContentLoaded', () => {
             const addBtn = elements.contentView.querySelector('.add-new-content-btn');
             if(addBtn) addBtn.onclick = () => handleCreate(currentContentType, currentDisciplinaId);
         }
-// Modal móvel e redimensionável para vídeo embed
-function openMovableVideoModal(link) {
-    // Remove modal anterior se existir
-    const oldModal = document.getElementById('movable-video-modal');
-    if (oldModal) oldModal.remove();
-    let embedHtml = '';
-    
-    // Verifica se é um vídeo do YouTube
-    const ytMatch = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
-    if (ytMatch && ytMatch[1]) {
-        const videoId = ytMatch[1];
-        embedHtml = `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
-    } 
-    // Verifica se é um vídeo do Vimeo
-    else if (link.match(/vimeo\.com\/(\d+)/)) {
-        const videoId = link.match(/vimeo\.com\/(\d+)/)[1];
-        embedHtml = `<iframe src="https://player.vimeo.com/video/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
     }
-    // Verifica se é um vídeo do Dailymotion
-    else if (link.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/)) {
-        const videoId = link.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/)[1];
-        embedHtml = `<iframe src="https://www.dailymotion.com/embed/video/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
-    }
-    // Verifica se é um clipe da Twitch
-    else if (link.match(/twitch\.tv\/\w+\/clip\/([a-zA-Z0-9-]+)/)) {
-        const clipId = link.match(/twitch\.tv\/\w+\/clip\/([a-zA-Z0-9-]+)/)[1];
-        embedHtml = `<iframe src="https://clips.twitch.tv/embed?clip=${clipId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
-    }
-    // Verifica se é um vídeo do Google Drive
-    else if (link.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9-_]+)/)) {
-        const fileId = link.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9-_]+)/)[1];
-        embedHtml = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
-    }
-    // Se for um link direto para um arquivo de vídeo
-    else if (link.match(/\.(mp4|webm|ogg|mov|avi|wmv|flv|mkv|m4v)$/i)) {
-        const extension = link.split('.').pop().toLowerCase();
-        let mimeType;
-        switch(extension) {
-            case 'mp4':
-            case 'm4v':
-                mimeType = 'video/mp4';
-                break;
-            case 'webm':
-                mimeType = 'video/webm';
-                break;
-            case 'ogg':
-                mimeType = 'video/ogg';
-                break;
-            case 'mov':
-                mimeType = 'video/quicktime';
-                break;
-            default:
-                mimeType = 'video/' + extension;
+
+    // Função para alternar o modo de encaixe (tiled view)
+    function toggleTiledView(modal) {
+        const body = document.body;
+        const dockButton = modal.querySelector('#video-modal-dock');
+        const isTiled = body.classList.contains('tiled-view-active');
+        const contentView = document.getElementById('content-view');
+
+        if (isTiled) {
+            // Desencaixar
+            body.classList.remove('tiled-view-active');
+            dockButton.innerHTML = '📌';
+            dockButton.title = 'Encaixar Janela';
+            
+            const container = document.getElementById('tiled-view-container');
+            if (container) {
+                // Move os elementos de volta para o body e remove o container
+                document.body.appendChild(modal);
+                document.body.appendChild(contentView);
+                container.remove();
+            }
+            // Restaura estilos inline para o modo flutuante
+            modal.style.cssText = `
+                position: fixed; top: 80px; left: 80px; 
+                width: ${Math.min(window.innerWidth * 0.6, 800)}px; 
+                height: ${Math.min(window.innerWidth * 0.6, 800) / (16/9)}px;
+                min-width: 320px; min-height: 180px; background: rgba(255,255,255,0.97);
+                border: none; border-radius: 18px; z-index: 2147483647;
+                box-shadow: 0 8px 32px 0 rgba(25,118,210,0.18), 0 1.5px 8px 0 rgba(76,0,130,0.10);
+                display: flex; flex-direction: column; overflow: hidden;
+            `;
+            contentView.style.cssText = ''; // Limpa estilos do modo tiled
+        } else {
+            // Encaixar
+            body.classList.add('tiled-view-active');
+            dockButton.innerHTML = '🔄';
+            dockButton.title = 'Desencaixar Janela';
+
+            // Cria o container para o modo tiled
+            const container = document.createElement('div');
+            container.id = 'tiled-view-container';
+            
+            const resizer = document.createElement('div');
+            resizer.className = 'tiled-resizer';
+
+            // Move os elementos para dentro do container
+            container.appendChild(modal);
+            container.appendChild(resizer);
+            container.appendChild(contentView);
+            document.body.appendChild(container);
+
+            // Limpa estilos inline conflitantes
+            modal.style.cssText = '';
+            contentView.style.cssText = '';
+
+            // Inicia a lógica do divisor
+            initTiledResizer(resizer, modal, contentView);
         }
-        embedHtml = `
-            <video controls controlsList="nodownload" style="width:100%;height:100%;background:#000;">
-                <source src="${link}" type="${mimeType}">
-                <p style="color:#fff;text-align:center;padding:20px;">
-                    Seu navegador não suporta a reprodução deste formato de vídeo (${extension}).
-                    <br><br>
-                    <a href="${link}" target="_blank" style="color:#1976d2;text-decoration:none;">Clique aqui para baixar o vídeo</a>
-                </p>
-            </video>`;
     }
-    // Se não for nenhum dos formatos acima, mostra como link
-    else {
-        embedHtml = `<div style="display:flex;align-items:center;justify-content:center;height:100%;">
-            <a href="${link}" target="_blank" style="color:#1976d2;text-decoration:none;padding:16px;text-align:center;">
-                <span style="display:block;font-size:2em;margin-bottom:8px;">🔗</span>
-                Abrir vídeo em nova aba
-            </a>
-        </div>`;
+
+    function initTiledResizer(resizer, leftPanel, rightPanel) {
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            let startX = e.clientX;
+            let startWidth = leftPanel.offsetWidth;
+            
+            // Adiciona uma sobreposição para capturar eventos do mouse sobre iframes
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; cursor:col-resize; z-index: 99999;';
+            document.body.appendChild(overlay);
+
+            const onMouseMove = (moveEvent) => {
+                if (!isResizing) return;
+                const dx = moveEvent.clientX - startX;
+                const newWidth = startWidth + dx;
+                // Adiciona limites de largura mínima
+                if (newWidth > 250 && newWidth < (window.innerWidth - 250)) {
+                    leftPanel.style.width = `${newWidth}px`;
+                }
+            };
+
+            const onMouseUp = () => {
+                isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                document.body.removeChild(overlay);
+            };
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
     }
-    const modal = document.createElement('div');
-    modal.id = 'movable-video-modal';
-    modal.style.position = 'fixed';
-    modal.style.top = '80px';
-    modal.style.left = '80px';
-    modal.style.width = '520px';
-    modal.style.height = '340px';
-    modal.style.background = 'rgba(255,255,255,0.97)';
-    modal.style.border = 'none';
-    modal.style.borderRadius = '18px';
-    modal.style.zIndex = '2147483647';
-    modal.style.boxShadow = '0 8px 32px 0 rgba(25,118,210,0.18), 0 1.5px 8px 0 rgba(76,0,130,0.10)';
-    modal.style.display = 'flex';
-    modal.style.flexDirection = 'column';
-    modal.style.overflow = 'hidden';
-    modal.innerHTML = `
-        <div id="video-modal-header" style="cursor:move; background:linear-gradient(90deg,#1976d2 60%,#764ba2 100%); color:#fff; padding:6px 14px; border-radius:18px 18px 0 0; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(25,118,210,0.10); min-height:36px; height:36px;">
-            <span style="font-size:1em; font-weight:500; letter-spacing:0.2px; display:flex; align-items:center; gap:6px;">
-                <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff2"/><path d="M10 8l6 4-6 4V8z" fill="#fff"/></svg>
-                Vídeo
-            </span>
-            <div style="display:flex; gap:6px; align-items:center;">
-                <button id="video-modal-shrink" title="Diminuir" style="background:none;border:none;color:#fff;font-size:1.1em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;"><span style="font-size:1.1em;">➖</span></button>
-                <button id="video-modal-grow" title="Aumentar" style="background:none;border:none;color:#fff;font-size:1.1em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;"><span style="font-size:1.1em;">➕</span></button>
-                <button id="video-modal-close" title="Fechar" style="background:none;border:none;color:#fff;font-size:1.3em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;"><span style="font-size:1.1em;">×</span></button>
+
+    // Modal móvel e redimensionável para vídeo embed
+    function openMovableVideoModal(link) {
+        // Remove modal anterior se existir
+        const oldModal = document.getElementById('movable-video-modal');
+        if (oldModal) oldModal.remove();
+        let embedHtml = '';
+        
+        // Regexes for different video platforms
+        const ytMatch = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        const vimeoMatch = link.match(/vimeo\.com\/(\d+)/);
+        const dailymotionMatch = link.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);
+        const driveMatch = link.match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([a-zA-Z0-9-_]+)/);
+
+        if (ytMatch && ytMatch[1]) {
+            const videoId = ytMatch[1];
+            embedHtml = `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+        } else if (vimeoMatch && vimeoMatch[1]) {
+            const videoId = vimeoMatch[1];
+            embedHtml = `<iframe src="https://player.vimeo.com/video/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+        } else if (dailymotionMatch && dailymotionMatch[1]) {
+            const videoId = dailymotionMatch[1];
+            embedHtml = `<iframe src="https://www.dailymotion.com/embed/video/${videoId}" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+        } else if (driveMatch && driveMatch[1]) {
+            const fileId = driveMatch[1];
+            embedHtml = `<iframe src="https://drive.google.com/file/d/${fileId}/preview" allowfullscreen style="width:100%;height:100%;border:none;"></iframe>`;
+        }
+        // Se não for, trata como link genérico
+        else {
+            embedHtml = `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:#000;">
+                <a href="${link}" target="_blank" style="color:#1976d2;text-decoration:none;padding:16px;text-align:center;font-size:1.2em;color:#fff;">
+                    <span style="display:block;font-size:2em;margin-bottom:8px;">🔗</span>
+                    Abrir link em nova aba
+                </a>
+            </div>`;
+        }
+
+        const modal = document.createElement('div');
+        modal.id = 'movable-video-modal';
+        
+        // Calcula dimensões responsivas com base na largura da janela
+        const modalWidth = Math.min(window.innerWidth * 0.6, 800); // 60% da largura da tela, max 800px
+        const modalHeight = modalWidth / (16 / 9); // Mantém proporção 16:9
+
+        modal.style.cssText = `
+            position: fixed; top: 80px; left: 80px; 
+            width: ${modalWidth}px; height: ${modalHeight}px;
+            min-width: 320px; min-height: 180px; background: rgba(255,255,255,0.97);
+            border: none; border-radius: 18px; z-index: 2147483647;
+            box-shadow: 0 8px 32px 0 rgba(25,118,210,0.18), 0 1.5px 8px 0 rgba(76,0,130,0.10);
+            display: flex; flex-direction: column; overflow: hidden;
+        `;
+        modal.innerHTML = `
+            <div id="video-modal-header" style="cursor:move; background:linear-gradient(90deg,#1976d2 60%,#764ba2 100%); color:#fff; padding:6px 14px; border-radius:18px 18px 0 0; display:flex; justify-content:space-between; align-items:center; box-shadow:0 2px 8px rgba(25,118,210,0.10); min-height:36px; height:36px;">
+                <span style="font-size:1em; font-weight:500; letter-spacing:0.2px; display:flex; align-items:center; gap:6px;">
+                    <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff2"/><path d="M10 8l6 4-6 4V8z" fill="#fff"/></svg>
+                    Vídeo
+                </span>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <button id="video-modal-dock" title="Encaixar Janela" style="background:none;border:none;color:#fff;font-size:1.1em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;">📌</button>
+                    <button id="video-modal-close" title="Fechar" style="background:none;border:none;color:#fff;font-size:1.3em;cursor:pointer;padding:2px 6px;border-radius:6px;transition:background 0.2s;"><span style="font-size:1.1em;">×</span></button>
+                </div>
             </div>
-        </div>
-        <div id="video-modal-body" style="flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#111;">${embedHtml}</div>
-    `;
-    document.body.appendChild(modal);
-    // Fechar
-    modal.querySelector('#video-modal-close').onclick = () => modal.remove();
-    // Redimensionar
-    let width = 480, height = 320;
-    modal.querySelector('#video-modal-grow').onclick = () => {
-        width += 80; height += 54;
-        modal.style.width = width + 'px';
-        modal.style.height = height + 'px';
-    };
-    modal.querySelector('#video-modal-shrink').onclick = () => {
-        width = Math.max(320, width - 80); height = Math.max(180, height - 54);
-        modal.style.width = width + 'px';
-        modal.style.height = height + 'px';
-    };
-    // Arrastar
-    const header = modal.querySelector('#video-modal-header');
-    let isDragging = false, startX, startY, startLeft, startTop;
-    header.onmousedown = function(e) {
-        isDragging = true;
-        startX = e.clientX;
-        startY = e.clientY;
-        startLeft = parseInt(modal.style.left);
-        startTop = parseInt(modal.style.top);
-        document.body.style.userSelect = 'none';
-    };
-    document.onmousemove = function(e) {
-        if (!isDragging) return;
-        modal.style.left = (startLeft + e.clientX - startX) + 'px';
-        modal.style.top = (startTop + e.clientY - startY) + 'px';
-    };
-    document.onmouseup = function() {
-        isDragging = false;
-        document.body.style.userSelect = '';
-    };
-}
+            <div id="video-modal-body" style="flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#111;">${embedHtml}</div>
+            <div class="resizer" data-direction="n" style="position:absolute; top:0; left:0; right:0; height:5px; cursor:ns-resize;"></div>
+            <div class="resizer" data-direction="s" style="position:absolute; bottom:0; left:0; right:0; height:5px; cursor:ns-resize;"></div>
+            <div class="resizer" data-direction="w" style="position:absolute; top:0; bottom:0; left:0; width:5px; cursor:ew-resize;"></div>
+            <div class="resizer" data-direction="e" style="position:absolute; top:0; bottom:0; right:0; width:5px; cursor:ew-resize;"></div>
+            <div class="resizer" data-direction="nw" style="position:absolute; top:0; left:0; width:10px; height:10px; cursor:nwse-resize;"></div>
+            <div class="resizer" data-direction="ne" style="position:absolute; top:0; right:0; width:10px; height:10px; cursor:nesw-resize;"></div>
+            <div class="resizer" data-direction="sw" style="position:absolute; bottom:0; left:0; width:10px; height:10px; cursor:nesw-resize;"></div>
+            <div class="resizer" data-direction="se" style="position:absolute; bottom:0; right:0; width:10px; height:10px; cursor:nwse-resize;"></div>
+        `;
+        document.body.appendChild(modal);
+        
+        modal.querySelector('#video-modal-close').onclick = () => {
+            document.body.classList.remove('tiled-view-active');
+            const container = document.getElementById('tiled-view-container');
+            if (container) {
+                 // Move content view back to main if it exists
+                const contentView = document.getElementById('content-view');
+                if(contentView) document.querySelector('main').appendChild(contentView);
+                container.remove();
+            }
+            modal.remove();
+        };
+        modal.querySelector('#video-modal-dock').onclick = () => toggleTiledView(modal);
+
+        const header = modal.querySelector('#video-modal-header');
+        const iframe = modal.querySelector('iframe');
+        const resizers = modal.querySelectorAll('.resizer');
+
+        let isDragging = false;
+        let isResizing = false;
+        let startX, startY, startLeft, startTop, startWidth, startHeight;
+
+        const onDrag = (e) => {
+            if (!isDragging || document.body.classList.contains('tiled-view-active')) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            modal.style.left = `${startLeft + dx}px`;
+            modal.style.top = `${startTop + dy}px`;
+        };
+
+        const onResize = (direction, e) => {
+            if (!isResizing || document.body.classList.contains('tiled-view-active')) return;
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            const minWidth = parseInt(modal.style.minWidth, 10);
+            const minHeight = parseInt(modal.style.minHeight, 10);
+
+            if (direction.includes('e')) modal.style.width = `${Math.max(startWidth + dx, minWidth)}px`;
+            if (direction.includes('w')) {
+                const newWidth = startWidth - dx;
+                if (newWidth > minWidth) {
+                    modal.style.width = `${newWidth}px`;
+                    modal.style.left = `${startLeft + dx}px`;
+                }
+            }
+            if (direction.includes('s')) modal.style.height = `${Math.max(startHeight + dy, minHeight)}px`;
+            if (direction.includes('n')) {
+                const newHeight = startHeight - dy;
+                if (newHeight > minHeight) {
+                    modal.style.height = `${newHeight}px`;
+                    modal.style.top = `${startTop + dy}px`;
+                }
+            }
+        };
+
+        const stopInteracting = () => {
+            isDragging = false;
+            isResizing = false;
+            if (iframe) iframe.style.pointerEvents = 'auto';
+            document.body.style.userSelect = 'auto';
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopInteracting);
+            resizers.forEach(resizer => {
+                const direction = resizer.getAttribute('data-direction');
+                document.removeEventListener('mousemove', (e) => onResize(direction, e));
+            });
+        };
+
+        header.addEventListener('mousedown', (e) => {
+            if (e.target.closest('button')) return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startLeft = modal.offsetLeft;
+            startTop = modal.offsetTop;
+            if (iframe) iframe.style.pointerEvents = 'none';
+            document.body.style.userSelect = 'none';
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopInteracting);
+        });
+
+        resizers.forEach(resizer => {
+            resizer.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                const direction = resizer.getAttribute('data-direction');
+                startX = e.clientX;
+                startY = e.clientY;
+                startWidth = modal.offsetWidth;
+                startHeight = modal.offsetHeight;
+                startLeft = modal.offsetLeft;
+                startTop = modal.offsetTop;
+                if (iframe) iframe.style.pointerEvents = 'none';
+                document.body.style.userSelect = 'none';
+                
+                const resizeHandler = (event) => onResize(direction, event);
+                document.addEventListener('mousemove', resizeHandler);
+                document.addEventListener('mouseup', () => {
+                    document.removeEventListener('mousemove', resizeHandler);
+                    stopInteracting();
+                }, { once: true });
+            });
+        });
     }
     
     // **CORRIGIDO** Renderiza o embed do YouTube de forma correta e segura
     function renderVideoEmbed(link) {
         // Regex mais robusta para pegar ID de vários formatos de URL do YouTube
-        const ytMatch = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+        const ytMatch = link.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/||.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
         if (ytMatch && ytMatch[1]) {
             const videoId = ytMatch[1];
             return `<div class="video-responsive"><iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe></div>`;
@@ -1109,7 +1331,7 @@ function openMovableVideoModal(link) {
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Nenhuma disciplina encontrada.</div>';
             return;
         }
-        // Filtra apenas as disciplinas com situation === 'estudando' e tipo_disciplina === 'normal'
+        // Filtra apenas as disciplinas com situation === 'estudando' e tipo_disciplina === 'idioma'
         const estudando = data.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'idioma');
         if (estudando.length === 0) {
             elements.pizzaContainer.innerHTML = '<div style="text-align:center;">Nenhuma disciplina em estudo.</div>';
@@ -1481,6 +1703,7 @@ function openMovableVideoModal(link) {
     window.goBackToDashboard = showDashboard;
     window.fetchTasks = fetchTasks;
     window.appState = appState;
+    window.openMovableVideoModal = openMovableVideoModal;
 });
 
 // Adiciona função para abrir modal de tarefas (fora do DOMContentLoaded para ser global)
@@ -1753,6 +1976,9 @@ function initAnnotationFeature() {
  * @param {MouseEvent} e - O evento do mouse.
  */
 function handleTextSelection(e) {
+    // Para qualquer fala em andamento quando uma nova seleção é feita
+    stopSpeaking();
+
     // Verifica se o clique foi dentro do modal de anotação
     if (e.target.closest('#annotation-popup')) {
         return;
@@ -1844,31 +2070,35 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
         </div>
         <div class="selected-text-data" style="display: none;" data-selected-text="${selectedText}"></div>
         <div class="popup-body">
-            <div class="annotation-section">
-                <label for="annotation-comment">Comentário:</label>
-                <textarea id="annotation-comment" placeholder="Adicione um comentário sobre este texto...">${hasExistingAnnotation ? existingAnnotation.comment : ''}</textarea>
-            </div>
-            
-            <div class="annotation-section">
-                <label for="annotation-css">Estilo CSS:</label>
-                <input type="text" id="annotation-css" placeholder="Selecione um estilo rápido acima ou digite CSS personalizado" value="${hasExistingAnnotation ? existingAnnotation.css : ''}">
-            </div>
-            
-            <div class="annotation-section">
-                <label>Estilos Rápidos:</label>
-                <div class="quick-styles">
-                    <button class="quick-style-btn" data-style="background-color: yellow; color: black;">🟡 Destaque</button>
-                    <button class="quick-style-btn" data-style="background-color: #ff6b6b; color: white;">🔴 Importante</button>
-                                               <button class="quick-style-btn" data-style="background-color: #4ecdc4; color: white;">🟢 Conceito</button>
-                           <button class="quick-style-btn" data-style="background-color: #45b7d1; color: white;">🔵 Definição</button>
-                           <button class="quick-style-btn" data-style="font-weight: bold; color: black;">⚫ Negrito</button>
-                           <button class="quick-style-btn" data-style="font-style: italic; color: black;">📝 Itálico</button>
-                </div>
-            </div>
-            
             <div class="ai-explanation">
-                <h4>🤖 Explicação IA</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4>🤖 Explicação IA</h4>
+                    <button id="tts-control-btn" title="Ouvir explicação" style="background:none; border:none; cursor:pointer; font-size: 1.2em;">🔊</button>
+                </div>
                 <p class="explanation-text"></p>
+            </div>
+            <div class="annotation-controls">
+                <div class="annotation-section">
+                    <label for="annotation-comment">Comentário:</label>
+                    <textarea id="annotation-comment" placeholder="Adicione um comentário sobre este texto...">${hasExistingAnnotation ? existingAnnotation.comment : ''}</textarea>
+                </div>
+                
+                <div class="annotation-section">
+                    <label for="annotation-css">Estilo CSS:</label>
+                    <input type="text" id="annotation-css" placeholder="Selecione um estilo rápido acima ou digite CSS personalizado" value="${hasExistingAnnotation ? existingAnnotation.css : ''}">
+                </div>
+                
+                <div class="annotation-section">
+                    <label>Estilos Rápidos:</label>
+                    <div class="quick-styles">
+                        <button class="quick-style-btn" data-style="background-color: yellow; color: black;">🟡 Destaque</button>
+                        <button class="quick-style-btn" data-style="background-color: #ff6b6b; color: white;">🔴 Importante</button>
+                        <button class="quick-style-btn" data-style="background-color: #4ecdc4; color: white;">🟢 Conceito</button>
+                        <button class="quick-style-btn" data-style="background-color: #45b7d1; color: white;">🔵 Definição</button>
+                        <button class="quick-style-btn" data-style="font-weight: bold; color: black;">⚫ Negrito</button>
+                        <button class="quick-style-btn" data-style="font-style: italic; color: black;">📝 Itálico</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="popup-footer">
@@ -1900,8 +2130,8 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
 
     // Adiciona eventos aos botões do pop-up
     document.getElementById('save-annotation').onclick = saveAnnotation;
-    document.getElementById('cancel-annotation').onclick = () => annotationPopup.remove();
-    document.querySelector('.close-popup-btn').onclick = () => annotationPopup.remove();
+    document.getElementById('cancel-annotation').onclick = () => { annotationPopup.remove(); stopSpeaking(); };
+    document.querySelector('.close-popup-btn').onclick = () => { annotationPopup.remove(); stopSpeaking(); };
     
     // Adiciona evento para o botão de remover (se existir)
     const removeBtn = document.getElementById('remove-annotation');
@@ -1913,6 +2143,7 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
     document.addEventListener('click', function closeModalOnOutsideClick(e) {
         if (annotationPopup && !annotationPopup.contains(e.target)) {
             annotationPopup.remove();
+            stopSpeaking();
             document.removeEventListener('click', closeModalOnOutsideClick);
         }
     });
@@ -1950,6 +2181,21 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
             e.preventDefault();
             e.stopPropagation();
             generateAIExplanation();
+        };
+    }
+
+    // Adiciona evento ao botão de controle de TTS
+    const ttsControlButton = document.getElementById('tts-control-btn');
+    if (ttsControlButton) {
+        ttsControlButton.onclick = () => {
+            const textToSpeak = annotationPopup.querySelector('.explanation-text').textContent;
+            if (textToSpeak) {
+                if (speechSynthesis.speaking) {
+                    stopSpeaking();
+                } else {
+                    speakText(textToSpeak);
+                }
+            }
         };
     }
     
@@ -2291,7 +2537,17 @@ async function generateAIExplanation() {
     
     try {
         const explanation = await callAIExplanationAPI(selectedText);
-        explanationText.innerHTML = explanation;
+        
+        // Converte markdown (negrito/itálico) para HTML para exibição
+        const htmlExplanation = explanation
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
+
+        explanationText.innerHTML = htmlExplanation;
+        
+        // Inicia a leitura automática com o texto puro (sem HTML)
+        speakText(explanation);
     } catch (error) {
         console.error('Erro ao gerar explicação:', error);
         explanationText.innerHTML = `<p style="color: #dc3545;">Erro ao gerar explicação: ${error.message}</p>`;
@@ -2311,20 +2567,19 @@ async function callAIExplanationAPI(text) {
     }
     
     const prompt = `
-Atue como um professor especialista e forneça uma explicação didática clara e acessível sobre o seguinte texto/conceito. Sua explicação deve:
+Act as a friendly, native English-speaking language tutor. Your goal is to explain the following text or concept to a language learner in a simple, clear, and encouraging way.
 
-1. **Ser clara e simples**: Use linguagem acessível, evitando jargões complexos
-2. **Ser educativa**: Explique o conceito de forma didática, como se estivesse ensinando para um estudante
-3. **Ser contextualizada**: Relacione com exemplos práticos quando possível
-4. **Ser concisa**: Mantenha a explicação objetiva, mas completa
-5. **Ser motivacional**: Incentive o aprendizado e a curiosidade
+1.  **Explain in Simple English:** Use common vocabulary and straightforward sentence structures. Avoid jargon or complex idioms.
+2.  **Provide Context and Examples:** Give one or two clear examples of how the selected text is used in a real-life sentence.
+3.  **Keep it Brief:** The explanation should be short and to the point.
+4.  **Be Encouraging:** Maintain a positive and helpful tone.
 
-**Texto para explicar:**
+Selected Text to Explain:
 """
 ${text}
 """
 
-**Explicação didática:**
+Your Explanation (in English):
 `;
 
     try {

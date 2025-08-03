@@ -1604,31 +1604,32 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
         </div>
         <div class="selected-text-data" style="display: none;" data-selected-text="${selectedText}"></div>
         <div class="popup-body">
-            <div class="annotation-section">
-                <label for="annotation-comment">Comentário:</label>
-                <textarea id="annotation-comment" placeholder="Adicione um comentário sobre este texto...">${hasExistingAnnotation ? existingAnnotation.comment : ''}</textarea>
-            </div>
-            
-            <div class="annotation-section">
-                <label for="annotation-css">Estilo CSS:</label>
-                <input type="text" id="annotation-css" placeholder="Selecione um estilo rápido acima ou digite CSS personalizado" value="${hasExistingAnnotation ? existingAnnotation.css : ''}">
-            </div>
-            
-            <div class="annotation-section">
-                <label>Estilos Rápidos:</label>
-                <div class="quick-styles">
-                    <button class="quick-style-btn" data-style="background-color: yellow; color: black;">🟡 Destaque</button>
-                    <button class="quick-style-btn" data-style="background-color: #ff6b6b; color: white;">🔴 Importante</button>
-                                               <button class="quick-style-btn" data-style="background-color: #4ecdc4; color: white;">🟢 Conceito</button>
-                           <button class="quick-style-btn" data-style="background-color: #45b7d1; color: white;">🔵 Definição</button>
-                           <button class="quick-style-btn" data-style="font-weight: bold; color: black;">⚫ Negrito</button>
-                           <button class="quick-style-btn" data-style="font-style: italic; color: black;">📝 Itálico</button>
-                </div>
-            </div>
-            
             <div class="ai-explanation">
                 <h4>🤖 Explicação IA</h4>
                 <p class="explanation-text"></p>
+            </div>
+            <div class="annotation-controls">
+                <div class="annotation-section">
+                    <label for="annotation-comment">Comentário:</label>
+                    <textarea id="annotation-comment" placeholder="Adicione um comentário sobre este texto...">${hasExistingAnnotation ? existingAnnotation.comment : ''}</textarea>
+                </div>
+                
+                <div class="annotation-section">
+                    <label for="annotation-css">Estilo CSS:</label>
+                    <input type="text" id="annotation-css" placeholder="Selecione um estilo rápido acima ou digite CSS personalizado" value="${hasExistingAnnotation ? existingAnnotation.css : ''}">
+                </div>
+                
+                <div class="annotation-section">
+                    <label>Estilos Rápidos:</label>
+                    <div class="quick-styles">
+                        <button class="quick-style-btn" data-style="background-color: yellow; color: black;">🟡 Destaque</button>
+                        <button class="quick-style-btn" data-style="background-color: #ff6b6b; color: white;">🔴 Importante</button>
+                        <button class="quick-style-btn" data-style="background-color: #4ecdc4; color: white;">🟢 Conceito</button>
+                        <button class="quick-style-btn" data-style="background-color: #45b7d1; color: white;">🔵 Definição</button>
+                        <button class="quick-style-btn" data-style="font-weight: bold; color: black;">⚫ Negrito</button>
+                        <button class="quick-style-btn" data-style="font-style: italic; color: black;">📝 Itálico</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="popup-footer">
@@ -2071,20 +2072,19 @@ async function callAIExplanationAPI(text) {
     }
     
     const prompt = `
-Atue como um professor especialista e forneça uma explicação didática clara e acessível sobre o seguinte texto/conceito. Sua explicação deve:
+Atue como um especialista amigável que adora simplificar ideias complexas. Sua missão é explicar o texto abaixo da forma mais clara e concisa possível.
 
-1. **Ser clara e simples**: Use linguagem acessível, evitando jargões complexos
-2. **Ser educativa**: Explique o conceito de forma didática, como se estivesse ensinando para um estudante
-3. **Ser contextualizada**: Relacione com exemplos práticos quando possível
-4. **Ser concisa**: Mantenha a explicação objetiva, mas completa
-5. **Ser motivacional**: Incentive o aprendizado e a curiosidade
+1.  **Seja Breve:** A explicação deve ter no máximo 3 ou 4 frases. Vá direto ao ponto.
+2.  **Use Analogias:** Compare o conceito com algo do dia a dia para facilitar o entendimento.
+3.  **Linguagem Simples:** Evite jargões técnicos e palavras complicadas.
+4.  **Tom Engajador:** Mantenha um tom positivo e interessante, como se estivesse compartilhando uma curiosidade legal.
 
-**Texto para explicar:**
+Texto para Explicar:
 """
 ${text}
 """
 
-**Explicação didática:**
+Sua Explicação Rápida e Clara:
 `;
 
     try {
