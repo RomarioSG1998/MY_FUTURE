@@ -216,16 +216,128 @@ body {
     justify-content: center;
 }
 
+/* Estilos para o container central com bandeiras */
+.header-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.flag-icon {
+    width: 40px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    transition: transform 0.2s ease;
+    vertical-align: middle;
+}
+
+.flag-icon:hover {
+    transform: scale(1.1);
+}
+
+.main-header #hacker-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    height: 30px;
+}
+
+.main-header #hacker-btn img {
+    height: 30px;
+    width: auto;
+    vertical-align: middle;
+    object-fit: contain;
+}
+
 @media (max-width: 768px) {
-    .main-header #hacker-btn {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        order: 2;
-        flex-shrink: 0;
-        /* Garantir que fique centralizado */
-        z-index: 10;
+    .header-center {
+        gap: 6px;
+        transform: translate(-50%, -50%);
     }
+    
+    .flag-icon {
+        width: 32px;
+        height: 24px;
+    }
+    
+    .main-header #hacker-btn {
+        position: static;
+        transform: none;
+        order: unset;
+        flex-shrink: 0;
+        z-index: unset;
+        padding: 0;
+        margin: 0;
+        height: 24px;
+    }
+    
+    .main-header #hacker-btn img {
+        height: 24px;
+    }
+}
+
+/* Temas de personalização por idioma */
+.english-theme {
+    --theme-primary: #012169;
+    --theme-secondary: #C8102E;
+    --theme-accent: #FFFFFF;
+}
+
+.spanish-theme {
+    --theme-primary: #C60B1E;
+    --theme-secondary: #FFC400;
+    --theme-accent: #FFFFFF;
+}
+
+/* Animações para transições de tema */
+.english-theme .card-disciplina,
+.spanish-theme .card-disciplina {
+    transition: all 0.3s ease;
+}
+
+.english-theme .card-disciplina:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(1, 33, 105, 0.15);
+}
+
+.spanish-theme .card-disciplina:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(198, 11, 30, 0.15);
+}
+
+/* Personalização dos botões FAB para temas */
+.english-theme .fab {
+    border: 2px solid rgba(1, 33, 105, 0.2);
+}
+
+.spanish-theme .fab {
+    border: 2px solid rgba(198, 11, 30, 0.2);
+}
+
+/* Personalização da barra de progresso */
+.english-theme .progress-bar-fg {
+    background: linear-gradient(90deg, #012169 0%, #C8102E 100%);
+}
+
+.spanish-theme .progress-bar-fg {
+    background: linear-gradient(90deg, #C60B1E 0%, #FFC400 100%);
+}
+
+/* Efeitos de transição suaves */
+#dashboard, #content-view, .main-header, .card-disciplina {
+    transition: background 0.5s ease, border 0.5s ease;
 }
 
 .main-header #hacker-btn img {
@@ -754,6 +866,17 @@ main {
 .fab svg path, .fab svg circle, .fab svg line {
     fill: var(--primary-color);
     stroke: var(--primary-color);
+}
+
+/* Sobrescrever cor do ícone do botão home para branco */
+#go-to-index-btn svg path {
+    fill: white !important;
+}
+
+/* Aumentar tamanho do botão + (adicionar disciplina) */
+#add-disciplina-btn {
+    font-size: 2.5em !important;
+    font-weight: bold;
 }
 #edit-gear-btn { bottom: 24px; right: 24px; }
 #extra-content-btn { bottom: 90px; right: 24px; }
@@ -3139,5 +3262,221 @@ body.edit-mode #edit-gear-btn svg path {
     }
     .tiled-resizer {
         display: none;
+    }
+}
+/* Estilos para cards individualizados por idioma */
+.card-disciplina.english-card {
+    border-left: 4px solid #012169 !important;
+    background: linear-gradient(135deg, rgba(1, 33, 105, 0.02) 0%, rgba(255, 255, 255, 0.8) 100%) !important;
+    box-shadow: 0 2px 8px rgba(1, 33, 105, 0.08);
+}
+
+.card-disciplina.english-card:hover {
+    box-shadow: 0 4px 12px rgba(1, 33, 105, 0.15);
+    transform: translateY(-2px);
+}
+
+.card-disciplina.english-card .progress-bar-fg {
+    background: linear-gradient(90deg, #012169 0%, #C8102E 100%) !important;
+}
+
+.card-disciplina.spanish-card {
+    border-left: 4px solid #C60B1E !important;
+    background: linear-gradient(135deg, rgba(198, 11, 30, 0.02) 0%, rgba(255, 196, 0, 0.05) 50%, rgba(255, 255, 255, 0.8) 100%) !important;
+    box-shadow: 0 2px 8px rgba(198, 11, 30, 0.08);
+}
+
+.card-disciplina.spanish-card:hover {
+    box-shadow: 0 4px 12px rgba(198, 11, 30, 0.15);
+    transform: translateY(-2px);
+}
+
+.card-disciplina.spanish-card .progress-bar-fg {
+    background: linear-gradient(90deg, #C60B1E 0%, #FFC400 100%) !important;
+}
+
+/* Animação suave para transições de cards */
+.card-disciplina.english-card,
+.card-disciplina.spanish-card {
+    transition: all 0.3s ease;
+}
+
+/* Indicadores visuais adicionais para os cards */
+.card-disciplina.english-card::before {
+    content: "🇬🇧";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+.card-disciplina.spanish-card::before {
+    content: "🇪🇸";
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 0.8em;
+    opacity: 0.7;
+}
+
+/* Garante que os cards tenham posição relativa para os pseudo-elementos */
+.card-disciplina {
+    position: relative;
+}
+/* Personalização dos botões FAB por idioma */
+.fab.english-fab {
+    background: linear-gradient(135deg, #012169 0%, #FFFFFF 50%, #C8102E 100%) !important;
+    border: 2px solid #012169 !important;
+    box-shadow: 0 4px 12px rgba(1, 33, 105, 0.3) !important;
+    color: #012169 !important;
+}
+
+.fab.english-fab:hover {
+    background: linear-gradient(135deg, #001a5c 0%, #f0f0f0 50%, #b00e28 100%) !important;
+    box-shadow: 0 6px 16px rgba(1, 33, 105, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+.fab.spanish-fab {
+    background: linear-gradient(135deg, #C60B1E 0%, #FFC400 50%, #C60B1E 100%) !important;
+    border: 2px solid #C60B1E !important;
+    box-shadow: 0 4px 12px rgba(198, 11, 30, 0.3) !important;
+    color: #C60B1E !important;
+}
+
+.fab.spanish-fab:hover {
+    background: linear-gradient(135deg, #b00a1a 0%, #e6b000 50%, #b00a1a 100%) !important;
+    box-shadow: 0 6px 16px rgba(198, 11, 30, 0.4) !important;
+    transform: translateY(-2px);
+}
+
+/* Transições suaves para os botões FAB */
+.fab.english-fab,
+.fab.spanish-fab {
+    transition: all 0.3s ease !important;
+}
+
+/* Personalização do menu de conteúdo extra */
+.english-fab + .extra-content-menu {
+    border: 2px solid #012169;
+    box-shadow: 0 4px 12px rgba(1, 33, 105, 0.2);
+}
+
+.spanish-fab + .extra-content-menu {
+    border: 2px solid #C60B1E;
+    box-shadow: 0 4px 12px rgba(198, 11, 30, 0.2);
+}
+
+/* Personalização dos botões do menu */
+.english-fab + .extra-content-menu button {
+    border-left: 3px solid #012169;
+}
+
+.english-fab + .extra-content-menu button:hover {
+    background: rgba(1, 33, 105, 0.1);
+}
+
+.spanish-fab + .extra-content-menu button {
+    border-left: 3px solid #C60B1E;
+}
+
+.spanish-fab + .extra-content-menu button:hover {
+    background: rgba(198, 11, 30, 0.1);
+}
+/* Personalização dos modais por idioma */
+.modal-overlay.english-modal .modal-content {
+    border: 3px solid #012169 !important;
+    box-shadow: 0 8px 32px rgba(1, 33, 105, 0.3) !important;
+}
+
+.modal-overlay.english-modal .modal-header {
+    background: linear-gradient(135deg, #012169 0%, #FFFFFF 50%, #C8102E 100%) !important;
+    border-bottom: 2px solid #012169 !important;
+}
+
+.modal-overlay.english-modal .modal-header h3 {
+    color: white !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.modal-overlay.english-modal .close-btn {
+    color: white !important;
+}
+
+.modal-overlay.english-modal button[type="submit"] {
+    background: linear-gradient(90deg, #012169 0%, #C8102E 100%) !important;
+    border: none !important;
+    color: white !important;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.english-modal button[type="submit"]:hover {
+    background: linear-gradient(90deg, #001a5c 0%, #b00e28 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(1, 33, 105, 0.3);
+}
+
+.modal-overlay.spanish-modal .modal-content {
+    border: 3px solid #C60B1E !important;
+    box-shadow: 0 8px 32px rgba(198, 11, 30, 0.3) !important;
+}
+
+.modal-overlay.spanish-modal .modal-header {
+    background: linear-gradient(135deg, #C60B1E 0%, #FFC400 50%, #C60B1E 100%) !important;
+    border-bottom: 2px solid #C60B1E !important;
+}
+
+.modal-overlay.spanish-modal .modal-header h3 {
+    color: white !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.3) !important;
+}
+
+.modal-overlay.spanish-modal .close-btn {
+    color: white !important;
+}
+
+.modal-overlay.spanish-modal button[type="submit"] {
+    background: linear-gradient(90deg, #C60B1E 0%, #FFC400 100%) !important;
+    border: none !important;
+    color: white !important;
+    transition: all 0.3s ease;
+}
+
+.modal-overlay.spanish-modal button[type="submit"]:hover {
+    background: linear-gradient(90deg, #b00a1a 0%, #e6b000 100%) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(198, 11, 30, 0.3);
+}
+
+/* Personalização dos campos de formulário nos modais */
+.modal-overlay.english-modal input:focus,
+.modal-overlay.english-modal textarea:focus,
+.modal-overlay.english-modal select:focus {
+    border-color: #012169 !important;
+    box-shadow: 0 0 0 2px rgba(1, 33, 105, 0.2) !important;
+}
+
+.modal-overlay.spanish-modal input:focus,
+.modal-overlay.spanish-modal textarea:focus,
+.modal-overlay.spanish-modal select:focus {
+    border-color: #C60B1E !important;
+    box-shadow: 0 0 0 2px rgba(198, 11, 30, 0.2) !important;
+}
+
+/* Animações para os modais personalizados */
+.modal-overlay.english-modal,
+.modal-overlay.spanish-modal {
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
     }
 }

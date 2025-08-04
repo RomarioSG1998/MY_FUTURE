@@ -179,7 +179,7 @@ window.handleVideoButtonDrag = function(event, button) {
 };
 
 // Função genérica para criar modais de CRUD (deve estar no topo do arquivo)
-function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
+function createCrudModal({ title, formFields, onSubmit, initialData = {}, language = null }) {
     const crudModalRoot = document.getElementById('crud-modal-root');
     if (!crudModalRoot) {
         console.error('Elemento #crud-modal-root não encontrado no DOM. Impossível exibir modal CRUD.');
@@ -203,20 +203,35 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
         }
     }).join('');
 
+    // Define estilos baseados no idioma
+    let modalStyles = '';
+    let headerStyles = 'position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;';
+    let buttonStyles = '';
+    
+    if (language === 'english') {
+        modalStyles = 'border: 3px solid #012169; box-shadow: 0 8px 32px rgba(1, 33, 105, 0.3);';
+        headerStyles = 'position: sticky; top: 0; background: linear-gradient(135deg, #012169 0%, #FFFFFF 50%, #C8102E 100%); z-index: 1; padding: 16px; border-bottom: 2px solid #012169;';
+        buttonStyles = 'background: linear-gradient(90deg, #012169 0%, #C8102E 100%); border: none; color: white;';
+    } else if (language === 'spanish') {
+        modalStyles = 'border: 3px solid #C60B1E; box-shadow: 0 8px 32px rgba(198, 11, 30, 0.3);';
+        headerStyles = 'position: sticky; top: 0; background: linear-gradient(135deg, #C60B1E 0%, #FFC400 50%, #C60B1E 100%); z-index: 1; padding: 16px; border-bottom: 2px solid #C60B1E;';
+        buttonStyles = 'background: linear-gradient(90deg, #C60B1E 0%, #FFC400 100%); border: none; color: white;';
+    }
+
     const modalHtml = `
-        <div class="modal-overlay crud-modal" style="z-index: 2147483647 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
-            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 400px; width: 100%; position: relative;">
-                <div class="modal-header" style="position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;">
+        <div class="modal-overlay crud-modal ${language ? language + '-modal' : ''}" style="z-index: 2147483647 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
+            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 400px; width: 100%; position: relative; ${modalStyles}">
+                <div class="modal-header" style="${headerStyles}">
                     <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0;">${title}</h3>
+                        <h3 style="margin: 0; ${language ? 'color: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);' : ''}">${title}</h3>
                     </div>
-                    <button class="close-btn" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5em; color: #222; cursor: pointer;">×</button>
+                    <button class="close-btn" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.5em; ${language ? 'color: white;' : 'color: #222;'} cursor: pointer;">×</button>
                 </div>
                 <div class="modal-body">
                     <form>
                         ${fieldsHtml}
                         <div class="action-buttons">
-                            <button type="submit">Salvar</button>
+                            <button type="submit" style="${buttonStyles}">Salvar</button>
                         </div>
                     </form>
                 </div>
@@ -389,9 +404,221 @@ function getCrudConfig(type) {
                     { value: 'concluída', label: 'Concluída' }
                 ], placeholder: 'Situação' }
             ]
+        },
+        flashcard: {
+            label: 'Flashcard',
+            fields: [
+                { name: 'card', type: 'textarea', placeholder: 'Frente::Verso (separe com ::)' }
+            ]
         }
     };
     return configs[type];
+}
+
+// --- PERSONALIZAÇÃO POR IDIOMA ---
+// Função para detectar o idioma da disciplina e personalizar a interface
+function detectLanguageAndCustomize(disciplineName) {
+    const englishKeywords = ['english', 'inglês', 'ingles', 'english language', 'esl'];
+    const spanishKeywords = ['spanish', 'espanhol', 'español', 'castellano', 'spanish language'];
+    
+    const lowerName = disciplineName.toLowerCase();
+    
+    let detectedLanguage = null;
+    
+    if (englishKeywords.some(keyword => lowerName.includes(keyword))) {
+        detectedLanguage = 'english';
+    } else if (spanishKeywords.some(keyword => lowerName.includes(keyword))) {
+        detectedLanguage = 'spanish';
+    }
+    
+    return detectedLanguage;
+}
+
+// Função para aplicar personalização visual baseada no idioma
+function applyLanguageCustomization(language) {
+    const englishFlag = document.querySelector('.flag-icon[alt="Bandeira da Inglaterra"]');
+    const spanishFlag = document.querySelector('.flag-icon[alt="Bandeira da Espanha"]');
+    const dashboard = document.getElementById('dashboard');
+    const contentView = document.getElementById('content-view');
+    const header = document.querySelector('.main-header');
+    const cards = document.querySelectorAll('.card-disciplina');
+    
+    if (!englishFlag || !spanishFlag) return;
+    
+    // Remove personalizações anteriores
+    englishFlag.style.border = '';
+    spanishFlag.style.border = '';
+    englishFlag.style.transform = '';
+    spanishFlag.style.transform = '';
+    englishFlag.style.opacity = '1';
+    spanishFlag.style.opacity = '1';
+    englishFlag.style.filter = '';
+    spanishFlag.style.filter = '';
+    
+    // Remove classes de personalização anteriores
+    document.body.classList.remove('english-theme', 'spanish-theme');
+    
+    if (language === 'english') {
+        // Destaca a bandeira da Inglaterra
+        englishFlag.style.border = '3px solid #FFD700';
+        englishFlag.style.transform = 'scale(1.2)';
+        englishFlag.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.7)';
+        
+        // Aplica filtro na bandeira da Espanha
+        spanishFlag.style.opacity = '0.5';
+        spanishFlag.style.filter = 'grayscale(50%)';
+        
+        // Aplica tema inglês (cores da bandeira: azul, branco, vermelho)
+        document.body.classList.add('english-theme');
+        
+        // Header com gradiente das cores da bandeira inglesa
+        if (header) {
+            header.style.background = 'linear-gradient(135deg, #012169 0%, #FFFFFF 50%, #C8102E 100%)';
+        }
+        
+        // Dashboard com fundo sutil das cores inglesas
+        if (dashboard) {
+            dashboard.style.background = 'linear-gradient(135deg, rgba(1, 33, 105, 0.05) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(200, 16, 46, 0.05) 100%)';
+            dashboard.style.border = '2px solid rgba(1, 33, 105, 0.2)';
+        }
+        
+        // Content view com tema inglês
+        if (contentView) {
+            contentView.style.background = 'linear-gradient(135deg, rgba(1, 33, 105, 0.03) 0%, rgba(255, 255, 255, 0.1) 50%, rgba(200, 16, 46, 0.03) 100%)';
+            contentView.style.border = '1px solid rgba(1, 33, 105, 0.1)';
+        }
+        
+        // Cards com bordas temáticas
+        cards.forEach(card => {
+            card.style.borderLeft = '4px solid #012169';
+            card.style.background = 'linear-gradient(135deg, rgba(1, 33, 105, 0.02) 0%, rgba(255, 255, 255, 0.8) 100%)';
+        });
+        
+    } else if (language === 'spanish') {
+        // Destaca a bandeira da Espanha
+        spanishFlag.style.border = '3px solid #FFD700';
+        spanishFlag.style.transform = 'scale(1.2)';
+        spanishFlag.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.7)';
+        
+        // Aplica filtro na bandeira da Inglaterra
+        englishFlag.style.opacity = '0.5';
+        englishFlag.style.filter = 'grayscale(50%)';
+        
+        // Aplica tema espanhol (cores da bandeira: vermelho e amarelo)
+        document.body.classList.add('spanish-theme');
+        
+        // Header com gradiente das cores da bandeira espanhola
+        if (header) {
+            header.style.background = 'linear-gradient(135deg, #C60B1E 0%, #FFC400 50%, #C60B1E 100%)';
+        }
+        
+        // Dashboard com fundo sutil das cores espanholas
+        if (dashboard) {
+            dashboard.style.background = 'linear-gradient(135deg, rgba(198, 11, 30, 0.05) 0%, rgba(255, 196, 0, 0.1) 50%, rgba(198, 11, 30, 0.05) 100%)';
+            dashboard.style.border = '2px solid rgba(198, 11, 30, 0.2)';
+        }
+        
+        // Content view com tema espanhol
+        if (contentView) {
+            contentView.style.background = 'linear-gradient(135deg, rgba(198, 11, 30, 0.03) 0%, rgba(255, 196, 0, 0.1) 50%, rgba(198, 11, 30, 0.03) 100%)';
+            contentView.style.border = '1px solid rgba(198, 11, 30, 0.1)';
+        }
+        
+        // Cards com bordas temáticas
+        cards.forEach(card => {
+            card.style.borderLeft = '4px solid #C60B1E';
+            card.style.background = 'linear-gradient(135deg, rgba(198, 11, 30, 0.02) 0%, rgba(255, 196, 0, 0.05) 50%, rgba(255, 255, 255, 0.8) 100%)';
+        });
+        
+    } else {
+        // Sem idioma detectado - remove todas as personalizações
+        if (header) {
+            header.style.background = '';
+        }
+        if (dashboard) {
+            dashboard.style.background = '';
+            dashboard.style.border = '';
+        }
+        if (contentView) {
+            contentView.style.background = '';
+            contentView.style.border = '';
+        }
+        cards.forEach(card => {
+            card.style.borderLeft = '';
+            card.style.background = '';
+        });
+    }
+}
+
+// Função para aplicar personalização nos botões FAB baseada no idioma
+function applyButtonCustomization(language) {
+    const editGearBtn = document.getElementById('edit-gear-btn');
+    const extraContentBtn = document.getElementById('extra-content-btn');
+    const fabButtons = document.querySelectorAll('.fab');
+    
+    // Remove personalizações anteriores
+    fabButtons.forEach(btn => {
+        btn.classList.remove('english-fab', 'spanish-fab');
+        btn.style.background = '';
+        btn.style.border = '';
+        btn.style.boxShadow = '';
+    });
+    
+    if (language === 'english') {
+        // Personalização para inglês (cores da bandeira: azul, branco, vermelho)
+        fabButtons.forEach(btn => {
+            btn.classList.add('english-fab');
+            btn.style.background = 'linear-gradient(135deg, #012169 0%, #FFFFFF 50%, #C8102E 100%)';
+            btn.style.border = '2px solid #012169';
+            btn.style.boxShadow = '0 4px 12px rgba(1, 33, 105, 0.3)';
+        });
+        
+        // Personalização específica para o botão de edição
+        if (editGearBtn) {
+            editGearBtn.style.color = '#012169';
+        }
+        
+        // Personalização específica para o botão de conteúdo extra
+        if (extraContentBtn) {
+            extraContentBtn.style.color = '#012169';
+        }
+        
+    } else if (language === 'spanish') {
+        // Personalização para espanhol (cores da bandeira: vermelho e amarelo)
+        fabButtons.forEach(btn => {
+            btn.classList.add('spanish-fab');
+            btn.style.background = 'linear-gradient(135deg, #C60B1E 0%, #FFC400 50%, #C60B1E 100%)';
+            btn.style.border = '2px solid #C60B1E';
+            btn.style.boxShadow = '0 4px 12px rgba(198, 11, 30, 0.3)';
+        });
+        
+        // Personalização específica para o botão de edição
+        if (editGearBtn) {
+            editGearBtn.style.color = '#C60B1E';
+        }
+        
+        // Personalização específica para o botão de conteúdo extra
+        if (extraContentBtn) {
+            extraContentBtn.style.color = '#C60B1E';
+        }
+        
+    } else {
+        // Remove todas as personalizações se não há idioma detectado
+        fabButtons.forEach(btn => {
+            btn.style.background = '';
+            btn.style.border = '';
+            btn.style.boxShadow = '';
+            btn.style.color = '';
+        });
+        
+        if (editGearBtn) {
+            editGearBtn.style.color = '';
+        }
+        
+        if (extraContentBtn) {
+            extraContentBtn.style.color = '';
+        }
+    }
 }
 
 // Aguarda o DOM estar completamente carregado para executar o script
@@ -413,6 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
         menuTextBtn: document.getElementById('menu-text-btn'), // (button can be relabeled if needed)
         menuVideoBtn: document.getElementById('menu-video-btn'),
         menuPracticeBtn: document.getElementById('menu-practice-btn'),
+        menuFlashcardsBtn: document.getElementById('menu-flashcards-btn'), // Added
         menuExtraBtn: document.getElementById('menu-extra-btn'),
         disciplinaModal: document.getElementById('disciplina-modal'),
         closeDisciplinaModalBtn: document.getElementById('close-modal-disciplina'),
@@ -432,7 +660,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditMode: false,
         currentDisciplinaId: null,
         currentContent: [],
-        currentContentType: 'video_text', // 'video_text', 'video', ou 'practice'
+        currentContentType: 'video_text', // 'video_text', 'video', 'practice', ou 'flashcard'
+        currentFlashcardIndex: 0, // For flashcards navigation
+        isFlashcardFlipped: false // For flashcards
     };
 
     // --- FUNÇÕES DE AUTENTICAÇÃO E INICIALIZAÇÃO ---
@@ -464,6 +694,14 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.extraContentBtn.classList.add('hidden');
         elements.extraContentMenu.classList.add('hidden');
         appState.currentDisciplinaId = null;
+        appState.currentFlashcardIndex = 0; // Reset flashcard index
+        appState.isFlashcardFlipped = false; // Reset flashcard flip state
+        
+        // Reaplica a personalização do dashboard baseada nas disciplinas em estudo
+        loadDashboard();
+        
+        // Remove personalização dos botões quando volta ao dashboard
+        applyButtonCustomization(null);
     }
 
     function showContentView() {
@@ -481,6 +719,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // CORREÇÃO: Se for tasks, sempre usar renderTasksTable e funções específicas
         if (currentContentType === 'tasks') {
             renderTasksTable(currentContent);
+            return;
+        }
+        
+        if (currentContentType === 'flashcard') {
+            renderFlashcards(currentContent, isEditMode, currentDisciplinaId);
             return;
         }
 
@@ -1034,6 +1277,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Funções CRUD para Conteúdo Extra
     async function handleCreateExtraContent(idDisciplina) {
         const userId = localStorage.getItem('user_id');
+        
+        // Detecta o idioma da disciplina atual para personalizar o modal
+        let detectedLanguage = null;
+        if (idDisciplina) {
+            const { data: disciplinaData } = await supabase
+                .from('disciplina')
+                .select('nome')
+                .eq('id', idDisciplina)
+                .single();
+            if (disciplinaData) {
+                detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+            }
+        }
+        
         createCrudModal({
             title: 'Novo Conteúdo Extra',
             formFields: [
@@ -1045,6 +1302,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { name: 'title', type: 'text', placeholder: 'Título' },
                 { name: 'link_or_text', type: 'text', placeholder: 'Link, texto ou URL da imagem' }
             ],
+            language: detectedLanguage,
             onSubmit: async (data) => {
                 if (!data.tipo_arquivo || !data.title || !data.link_or_text) {
                     alert('Preencha todos os campos obrigatórios.');
@@ -1066,6 +1324,20 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleEditExtraContent(id) {
         const { data: item, error } = await supabase.from('extra_content').select('*').eq('id', id).single();
         if (error) return alert('Erro ao buscar item para edição.');
+        
+        // Detecta o idioma da disciplina atual para personalizar o modal
+        let detectedLanguage = null;
+        if (item && item.id_disciplina) {
+            const { data: disciplinaData } = await supabase
+                .from('disciplina')
+                .select('nome')
+                .eq('id', item.id_disciplina)
+                .single();
+            if (disciplinaData) {
+                detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+            }
+        }
+        
         createCrudModal({
             title: 'Editar Conteúdo Extra',
             formFields: [
@@ -1078,6 +1350,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 { name: 'link_or_text', type: 'text', placeholder: 'Link, texto ou URL da imagem' }
             ],
             initialData: item,
+            language: detectedLanguage,
             onSubmit: async (data) => {
                 await supabase.from('extra_content').update(data).eq('id', id);
                 appState.currentContentType = 'extra';
@@ -1107,8 +1380,33 @@ document.addEventListener('DOMContentLoaded', () => {
         // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive) e tipo_disciplina === 'idioma'
         const estudando = disciplinas.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'idioma');
 
+        // Detecta o idioma predominante das disciplinas em estudo
+        let predominantLanguage = null;
+        if (estudando.length > 0) {
+            const languageCounts = { english: 0, spanish: 0 };
+            
+            estudando.forEach(d => {
+                const detectedLanguage = detectLanguageAndCustomize(d.nome);
+                if (detectedLanguage) {
+                    languageCounts[detectedLanguage]++;
+                }
+            });
+            
+            // Define o idioma predominante
+            if (languageCounts.english > languageCounts.spanish) {
+                predominantLanguage = 'english';
+            } else if (languageCounts.spanish > languageCounts.english) {
+                predominantLanguage = 'spanish';
+            }
+            
+            // Aplica a personalização baseada no idioma predominante
+            applyLanguageCustomization(predominantLanguage);
+        }
+
         if (estudando.length === 0) {
             elements.dashboardDisciplinas.innerHTML = '<div>Nenhuma disciplina em estudo.</div>';
+            // Remove personalização se não há disciplinas
+            applyLanguageCustomization(null);
         } else {
             elements.dashboardDisciplinas.innerHTML = estudando.map(d => {
                 const inicio = new Date(d.date_inicio);
@@ -1117,12 +1415,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const totalDias = Math.max(1, Math.ceil((fim - inicio) / (1000 * 60 * 60 * 24)));
                 const diasEstudados = Math.max(0, Math.min(totalDias, Math.ceil((hoje - inicio) / (1000 * 60 * 60 * 24))));
                 const percent = Math.round((diasEstudados / totalDias) * 100);
+                
+                // Detecta o idioma individual da disciplina
+                const detectedLanguage = detectLanguageAndCustomize(d.nome);
+                
+                // Define classes e estilos específicos para cada idioma
+                let cardClasses = 'card-disciplina';
+                let progressBarColor = '';
+                let borderStyle = '';
+                let backgroundStyle = '';
+                
+                if (detectedLanguage === 'english') {
+                    cardClasses += ' english-card';
+                    progressBarColor = 'background: linear-gradient(90deg, #012169 0%, #C8102E 100%);';
+                    borderStyle = 'border-left: 4px solid #012169;';
+                    backgroundStyle = 'background: linear-gradient(135deg, rgba(1, 33, 105, 0.02) 0%, rgba(255, 255, 255, 0.8) 100%);';
+                } else if (detectedLanguage === 'spanish') {
+                    cardClasses += ' spanish-card';
+                    progressBarColor = 'background: linear-gradient(90deg, #C60B1E 0%, #FFC400 100%);';
+                    borderStyle = 'border-left: 4px solid #C60B1E;';
+                    backgroundStyle = 'background: linear-gradient(135deg, rgba(198, 11, 30, 0.02) 0%, rgba(255, 196, 0, 0.05) 50%, rgba(255, 255, 255, 0.8) 100%);';
+                }
+                
                 return `
-                    <div class="card-disciplina" data-id="${d.id}">
+                    <div class="${cardClasses}" data-id="${d.id}" style="${borderStyle} ${backgroundStyle}">
                         <div class="card-disciplina-title">${d.nome}</div>
                         <div class="card-disciplina-date">${d.date_inicio || ''} até ${d.date_fim || ''}</div>
                         <div class="progress-bar-bg">
-                            <div class="progress-bar-fg" style="width:${percent}%;"></div>
+                            <div class="progress-bar-fg" style="width:${percent}%; ${progressBarColor}"></div>
                         </div>
                         <div class="progress-label">${diasEstudados}/${totalDias} dias</div>
                         <div class="card-disciplina-situation">${d.situation || ''}</div>
@@ -1166,6 +1486,19 @@ document.addEventListener('DOMContentLoaded', () => {
         
         elements.contentView.innerHTML = `<div style="text-align:center; padding: 40px;">Carregando...</div>`;
         showContentView();
+        
+        // Busca informações da disciplina para personalização
+        const { data: disciplinaData, error: disciplinaError } = await supabase
+            .from('disciplina')
+            .select('nome')
+            .eq('id', disciplinaId)
+            .single();
+        
+        if (!disciplinaError && disciplinaData) {
+            const detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+            applyLanguageCustomization(detectedLanguage);
+            applyButtonCustomization(detectedLanguage);
+        }
         
         const { data, error } = await supabase.from(type).select('*').eq('id_disciplina', disciplinaId);
 
@@ -1288,6 +1621,85 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const addBtn = elements.contentView.querySelector('.add-new-task-btn');
             if (addBtn) addBtn.onclick = () => handleCreateTask(disciplinaId);
+        }
+    }
+
+    // --- FLASHCARDS ---
+    function renderFlashcards(flashcards, isEditMode, disciplinaId) {
+        if (!Array.isArray(flashcards)) {
+            flashcards = [];
+        }
+
+        let flashcardHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
+
+        if (flashcards.length === 0) {
+            flashcardHtml += `
+                <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
+                    Ainda não há flashcards para esta disciplina.
+                </div>
+                <div style="text-align:center;">
+                    <button class="add-new-flashcard-btn">➕ Adicionar Flashcard</button>
+                </div>`;
+            elements.contentView.innerHTML = flashcardHtml;
+            elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
+            return;
+        }
+
+        const currentCard = flashcards[appState.currentFlashcardIndex];
+        const [front, back] = currentCard.card.split('::').map(s => s.trim());
+        const displayContent = appState.isFlashcardFlipped ? back : front;
+
+        flashcardHtml += `
+            <div class="flashcard-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 20px;">
+                <div class="flashcard" style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 12px; padding: 30px; width: 100%; max-width: 500px; min-height: 200px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 1.5em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.3s ease, background 0.3s ease;" data-id="${currentCard.id}">
+                    ${displayContent}
+                </div>
+                <div class="flashcard-controls" style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button id="prev-flashcard-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Anterior</button>
+                    <button id="flip-flashcard-btn" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Virar</button>
+                    <button id="next-flashcard-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Próximo</button>
+                </div>
+                ${isEditMode ? `
+                    <div class="flashcard-edit-controls" style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="crud-btn edit-flashcard-btn" data-id="${currentCard.id}" style="padding: 8px 15px; background: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
+                        <button class="crud-btn delete-flashcard-btn" data-id="${currentCard.id}" style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">🗑️ Excluir</button>
+                        <button class="add-new-flashcard-btn" style="padding: 8px 15px; background: #1976d2; color: white; border: none; border-radius: 6px; cursor: pointer;">➕ Adicionar Novo</button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        elements.contentView.innerHTML = flashcardHtml;
+
+        // Add event listeners for flashcard navigation and flip
+        const flashcardElement = elements.contentView.querySelector('.flashcard');
+        const prevBtn = elements.contentView.querySelector('#prev-flashcard-btn');
+        const flipBtn = elements.contentView.querySelector('#flip-flashcard-btn');
+        const nextBtn = elements.contentView.querySelector('#next-flashcard-btn');
+
+        flashcardElement.onclick = () => {
+            appState.isFlashcardFlipped = !appState.isFlashcardFlipped;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+        flipBtn.onclick = () => {
+            appState.isFlashcardFlipped = !appState.isFlashcardFlipped;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+        prevBtn.onclick = () => {
+            appState.currentFlashcardIndex = (appState.currentFlashcardIndex - 1 + flashcards.length) % flashcards.length;
+            appState.isFlashcardFlipped = false;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+        nextBtn.onclick = () => {
+            appState.currentFlashcardIndex = (appState.currentFlashcardIndex + 1) % flashcards.length;
+            appState.isFlashcardFlipped = false;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+
+        // Add event listeners for CRUD buttons if in edit mode
+        if (isEditMode) {
+            elements.contentView.querySelector('.edit-flashcard-btn').onclick = () => handleEdit('flashcard', currentCard.id);
+            elements.contentView.querySelector('.delete-flashcard-btn').onclick = () => handleDelete('flashcard', currentCard.id);
+            elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
         }
     }
 
@@ -1448,9 +1860,24 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleCreate(type, disciplinaId) {
         const config = getCrudConfig(type);
         const userId = localStorage.getItem('user_id');
+        
+        // Detecta o idioma da disciplina atual para personalizar o modal
+        let detectedLanguage = null;
+        if (disciplinaId) {
+            const { data: disciplinaData } = await supabase
+                .from('disciplina')
+                .select('nome')
+                .eq('id', disciplinaId)
+                .single();
+            if (disciplinaData) {
+                detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+            }
+        }
+        
         createCrudModal({
             title: `Novo ${config.label}`,
             formFields: config.fields,
+            language: detectedLanguage,
             onSubmit: async (data) => {
                 let insertData = {};
                 let valid = true;
@@ -1478,6 +1905,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         texto: data.texto,
                         link: data.link
                     };
+                } else if (type === 'flashcard') {
+                    valid = data.card;
+                    insertData = {
+                        id_disciplina: disciplinaId,
+                        id_usuario: userId,
+                        card: data.card
+                    };
                 } else {
                     valid = false;
                 }
@@ -1495,11 +1929,25 @@ document.addEventListener('DOMContentLoaded', () => {
         const { data: itemData, error } = await supabase.from(type).select('*').eq('id', id).single();
         if (error) { console.error("Erro ao buscar item para edição", error); return; }
 
+        // Detecta o idioma da disciplina atual para personalizar o modal
+        let detectedLanguage = null;
+        if (itemData && itemData.id_disciplina) {
+            const { data: disciplinaData } = await supabase
+                .from('disciplina')
+                .select('nome')
+                .eq('id', itemData.id_disciplina)
+                .single();
+            if (disciplinaData) {
+                detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+            }
+        }
+
         const config = getCrudConfig(type);
         createCrudModal({
             title: `Editar ${config.label}`,
             formFields: config.fields,
             initialData: itemData,
+            language: detectedLanguage,
             onSubmit: async (data) => {
                 await supabase.from(type).update(data).eq('id', id);
             }
@@ -1517,11 +1965,26 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleEditTask(id, disciplinaId) {
         const { data: item, error } = await supabase.from('tasks').select('*').eq('id', id).single();
         if (error) return alert('Erro ao buscar tarefa para edição.');
+        
+        // Detecta o idioma da disciplina para personalizar o modal
+        let detectedLanguage = null;
+        if (disciplinaId) {
+            const { data: disciplinaData } = await supabase
+                .from('disciplina')
+                .select('nome')
+                .eq('id', disciplinaId)
+                .single();
+            if (disciplinaData) {
+                detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+            }
+        }
+        
         const userId = localStorage.getItem('user_id');
         createCrudModal({
             title: 'Editar Tarefa',
             formFields: getCrudConfig('tasks').fields,
             initialData: item,
+            language: detectedLanguage,
             onSubmit: async (data) => {
                 if (!data.nome || !data.data_fim || !data.situacao) {
                     alert('Preencha todos os campos obrigatórios.');
@@ -1553,6 +2016,7 @@ document.addEventListener('DOMContentLoaded', () => {
             createCrudModal({
                 title: 'Nova Disciplina',
                 formFields: fields,
+                language: null, // Modal neutro para criação de disciplinas
                 onSubmit: async (data) => {
                                     if (!data.nome || !data.date_inicio || !data.situation || !data.date_fim || !data.tipo_disciplina) {
                     alert('Preencha todos os campos obrigatórios.');
@@ -1571,10 +2035,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } else if (mode === 'edit' && id) {
             supabase.from('disciplina').select('*').eq('id', id).single().then(({ data: disciplina }) => {
+                // Detecta o idioma da disciplina para personalizar o modal
+                const detectedLanguage = disciplina ? detectLanguageAndCustomize(disciplina.nome) : null;
+                
                 createCrudModal({
                     title: 'Editar Disciplina',
                     formFields: fields,
                     initialData: disciplina,
+                    language: detectedLanguage,
                     onSubmit: async (data) => {
                         await supabase.from('disciplina').update({
                             nome: data.nome,
@@ -1620,6 +2088,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.menuTextBtn.onclick = () => fetchContent('video_text', appState.currentDisciplinaId);
     elements.menuVideoBtn.onclick = () => fetchContent('video', appState.currentDisciplinaId);
     elements.menuPracticeBtn.onclick = () => fetchContent('practice', appState.currentDisciplinaId);
+    elements.menuFlashcardsBtn.onclick = () => fetchContent('flashcard', appState.currentDisciplinaId); // Added
 
     if (elements.menuExtraBtn) {
         elements.menuExtraBtn.onclick = async () => {
@@ -1861,17 +2330,32 @@ function renderTasksTableForModal(tasks, disciplinaId) {
     return html;
 }
 
-function handleCreateTaskModal(disciplinaId, container) {
+async function handleCreateTaskModal(disciplinaId, container) {
     const userId = localStorage.getItem('user_id');
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     const todayStr = `${yyyy}-${mm}-${dd}`;
+    
+    // Detecta o idioma da disciplina para personalizar o modal
+    let detectedLanguage = null;
+    if (disciplinaId) {
+        const { data: disciplinaData } = await supabase
+            .from('disciplina')
+            .select('nome')
+            .eq('id', disciplinaId)
+            .single();
+        if (disciplinaData) {
+            detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+        }
+    }
+    
     createCrudModal({
         title: 'Nova Tarefa',
         formFields: getCrudConfig('tasks').fields,
         initialData: { id_disciplina: disciplinaId, id_usuario: userId, data_inicio: todayStr },
+        language: detectedLanguage,
         onSubmit: async (data) => {
             if (!data.nome || !data.data_fim || !data.situacao) {
                 alert('Preencha todos os campos obrigatórios.');
@@ -1892,17 +2376,31 @@ function handleCreateTaskModal(disciplinaId, container) {
             await fetchTasksForModal(disciplinaId, container);
         }
     });
-}
 
-function handleEditTaskModal(id, disciplinaId, container) {
-    supabase.from('tasks').select('*').eq('id', id).single().then(({ data: item, error }) => {
-        if (error) return alert('Erro ao buscar tarefa para edição.');
-        const userId = localStorage.getItem('user_id');
-        createCrudModal({
-            title: 'Editar Tarefa',
-            formFields: getCrudConfig('tasks').fields,
-            initialData: item,
-            onSubmit: async (data) => {
+async function handleEditTaskModal(id, disciplinaId, container) {
+    const { data: item, error } = await supabase.from('tasks').select('*').eq('id', id).single();
+    if (error) return alert('Erro ao buscar tarefa para edição.');
+    
+    // Detecta o idioma da disciplina para personalizar o modal
+    let detectedLanguage = null;
+    if (disciplinaId) {
+        const { data: disciplinaData } = await supabase
+            .from('disciplina')
+            .select('nome')
+            .eq('id', disciplinaId)
+            .single();
+        if (disciplinaData) {
+            detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+        }
+    }
+    
+    const userId = localStorage.getItem('user_id');
+    createCrudModal({
+        title: 'Editar Tarefa',
+        formFields: getCrudConfig('tasks').fields,
+        initialData: item,
+        language: detectedLanguage,
+        onSubmit: async (data) => {
                 if (!data.nome || !data.data_fim || !data.situacao) {
                     alert('Preencha todos os campos obrigatórios.');
                     return;
@@ -1918,7 +2416,7 @@ function handleEditTaskModal(id, disciplinaId, container) {
                 await fetchTasksForModal(disciplinaId, container);
             }
         });
-    });
+    };
 }
 
 function handleDeleteTaskModal(id, disciplinaId, container) {
@@ -1937,10 +2435,25 @@ async function handleCreateTask(disciplinaId) {
     const mm = String(today.getMonth() + 1).padStart(2, '0');
     const dd = String(today.getDate()).padStart(2, '0');
     const todayStr = `${yyyy}-${mm}-${dd}`;
+    
+    // Detecta o idioma da disciplina para personalizar o modal
+    let detectedLanguage = null;
+    if (disciplinaId) {
+        const { data: disciplinaData } = await supabase
+            .from('disciplina')
+            .select('nome')
+            .eq('id', disciplinaId)
+            .single();
+        if (disciplinaData) {
+            detectedLanguage = detectLanguageAndCustomize(disciplinaData.nome);
+        }
+    }
+    
     createCrudModal({
         title: 'Nova Tarefa',
         formFields: getCrudConfig('tasks').fields,
         initialData: { id_disciplina: disciplinaId, id_usuario: userId, data_inicio: todayStr },
+        language: detectedLanguage,
         onSubmit: async (data) => {
             if (!data.nome || !data.data_fim || !data.situacao) {
                 alert('Preencha todos os campos obrigatórios.');

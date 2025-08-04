@@ -757,6 +757,17 @@ main {
     fill: var(--primary-color);
     stroke: var(--primary-color);
 }
+
+/* Correção para o botão home - ícone branco */
+#go-to-index-btn svg path {
+    fill: white !important;
+}
+
+/* Aumentar tamanho do botão + */
+#add-disciplina-btn {
+    font-size: 2.5em !important;
+    font-weight: bold;
+}
 #edit-gear-btn { bottom: 24px; right: 24px; }
 #extra-content-btn { bottom: 90px; right: 24px; }
 #add-disciplina-btn { 
