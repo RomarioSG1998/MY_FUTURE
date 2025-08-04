@@ -1,3 +1,4 @@
+"use strict";
 // --- CONFIGURAÇÃO INICIAL E SUPABASE ---
 const SUPABASE_URL = 'https://zzrylgsjksrjotgcwavt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cnlsZ3Nqa3Nyam90Z2N3YXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4Mjc0OTYsImV4cCI6MjA2NDQwMzQ5Nn0.caBlCmOqKonuxTPacPIHH1FeVZFr8AJKwpz_v1Q3BwM';
@@ -178,10 +179,10 @@ function getCrudConfig(type) {
         practice: {
             label: 'Prática',
             fields: [
+                 { value: 'Teoria', label: 'Teoria'},
+                 { value: 'Exemplo', label: 'Exemplo'},
+                 { value: 'Exercício', label: 'Exercício'},
                  { name: 'tipo', type: 'select', options: [
-                     {value: 'Teoria', label: 'Teoria'},
-                     {value: 'Exemplo', label: 'Exemplo'},
-                     {value: 'Exercício', label: 'Exercício'},
                  ]},
                 { name: 'texto', type: 'textarea', placeholder: 'Descrição da prática' },
                 { name: 'link', type: 'text', placeholder: 'Link (Opcional)' },
@@ -215,6 +216,12 @@ function getCrudConfig(type) {
                     { value: 'concluída', label: 'Concluída' }
                 ], placeholder: 'Situação' }
             ]
+        },
+        flashcard: {
+            label: 'Flashcard',
+            fields: [
+                { name: 'card', type: 'textarea', placeholder: 'Frente::Verso (separe com ::)' }
+            ]
         }
     };
     return configs[type];
@@ -239,7 +246,9 @@ document.addEventListener('DOMContentLoaded', () => {
         menuTextBtn: document.getElementById('menu-text-btn'),
         menuVideoBtn: document.getElementById('menu-video-btn'),
         menuPracticeBtn: document.getElementById('menu-practice-btn'),
+        menuTasksBtn: document.getElementById('menu-tasks-btn'), // Added
         menuExtraBtn: document.getElementById('menu-extra-btn'),
+        menuFlashcardsBtn: document.getElementById('menu-flashcards-btn'), // Added
         disciplinaModal: document.getElementById('disciplina-modal'),
         closeDisciplinaModalBtn: document.getElementById('close-modal-disciplina'),
         pizzaContainer: document.getElementById('pizza-container'),
@@ -258,7 +267,9 @@ document.addEventListener('DOMContentLoaded', () => {
         isEditMode: false,
         currentDisciplinaId: null,
         currentContent: [],
-        currentContentType: 'text', // 'text', 'video', ou 'practice'
+        currentContentType: 'text', // 'text', 'video', 'practice', 'flashcard'
+        currentFlashcardIndex: 0, // For flashcards navigation
+        isFlashcardFlipped: false // For flashcards
     };
 
     // --- FUNÇÕES DE AUTENTICAÇÃO E INICIALIZAÇÃO ---
@@ -290,6 +301,8 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.extraContentBtn.classList.add('hidden');
         elements.extraContentMenu.classList.add('hidden');
         appState.currentDisciplinaId = null;
+        appState.currentFlashcardIndex = 0; // Reset flashcard index
+        appState.isFlashcardFlipped = false; // Reset flashcard flip state
     }
 
     function showContentView() {
@@ -299,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.extraContentBtn.classList.remove('hidden');
     }
     
-    // Função genérica para renderizar conteúdo (texto, vídeo, prática)
+    // Função genérica para renderizar conteúdo (texto, vídeo, prática, flashcard)
     function renderContent() {
         showContentView();
         const { currentContent, currentContentType, isEditMode, currentDisciplinaId } = appState;
@@ -307,6 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // CORREÇÃO: Se for tasks, sempre usar renderTasksTable e funções específicas
         if (currentContentType === 'tasks') {
             renderTasksTable(currentContent);
+            return;
+        }
+        
+        if (currentContentType === 'flashcard') {
+            renderFlashcards(currentContent, isEditMode, currentDisciplinaId);
             return;
         }
 
@@ -484,6 +502,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para renderizar Conteúdo Extra como cards, igual às outras seções
     function renderExtraContentCards(data, isEditMode, idDisciplina) {
+        // Ensure data is an array
+        if (!Array.isArray(data)) {
+            data = [];
+        }
+
         let contentHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
         if (!data || data.length === 0) {
             contentHtml += `
@@ -619,14 +642,18 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Carrega os dados do dashboard inicial
     async function loadDashboard() {
+        console.log('loadDashboard started'); // Added log
         const { data: disciplinas, error } = await supabase.from('disciplina').select('*');
-        if (error || !disciplinas) {
+        if (error || !Array.isArray(disciplinas)) { // Added Array.isArray check
+            console.error('Error loading disciplines:', error); // Added log
             elements.dashboardDisciplinas.innerHTML = '<div style="color:var(--danger-color);">Erro ao carregar disciplinas.</div>';
             return;
         }
+        console.log('Disciplines fetched:', disciplinas); // Added log
 
         // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive) e tipo_disciplina === 'normal'
         const estudando = disciplinas.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'normal');
+        console.log('Estudando disciplines (normal type):', estudando); // Added log
 
         if (estudando.length === 0) {
             elements.dashboardDisciplinas.innerHTML = '<div>Nenhuma disciplina em estudo.</div>';
@@ -663,6 +690,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             // Evento para o botão de tarefas
             elements.dashboardDisciplinas.querySelectorAll('.btn-tasks').forEach(btn => {
+                console.log('Attaching click listener to task button for disciplina ID:', btn.dataset.id); // Added log
                 btn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     openTasksModal(btn.dataset.id);
@@ -671,17 +699,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Carrega contagens totais
-        const [textos, videos, practices] = await Promise.all([
+        const [textos, videos, practices, flashcards] = await Promise.all([
             supabase.from('text').select('id', { count: 'exact', head: true }),
             supabase.from('video').select('id', { count: 'exact', head: true }),
-            supabase.from('practice').select('id', { count: 'exact', head: true })
+            supabase.from('practice').select('id', { count: 'exact', head: true }),
+            supabase.from('flashcard').select('id', { count: 'exact', head: true })
         ]);
 
         console.log('Situações das disciplinas:', disciplinas.map(d => d.situation));
     }
     
-    // Busca conteúdo (text, video, practice) de uma disciplina
+    // Busca conteúdo (text, video, practice, flashcard) de uma disciplina
     async function fetchContent(type, disciplinaId) {
+        console.log(`Attempting to fetch content of type: ${type} for discipline ID: ${disciplinaId}`); // Added log
         appState.currentContentType = type;
         appState.currentDisciplinaId = disciplinaId;
         
@@ -690,11 +720,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const { data, error } = await supabase.from(type).select('*').eq('id_disciplina', disciplinaId);
 
-        if (error) {
+        if (error || !Array.isArray(data)) { // Added Array.isArray check
             console.error(`Erro ao buscar ${type}:`, error);
             appState.currentContent = [];
+            console.log(`Content for ${type} is empty or errored.`); // Added log
         } else {
             appState.currentContent = data;
+            console.log(`Fetched ${data.length} items for ${type}.`, data); // Added log
         }
         
         renderContent();
@@ -721,7 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .eq('id_disciplina', String(disciplinaId))
             .eq('id_usuario', String(userId));
         console.log('Tasks retornadas:', tasks, 'Erro:', error, 'userId:', userId, 'disciplinaId:', disciplinaId);
-        if (error) {
+        if (error || !Array.isArray(tasks)) { // Added Array.isArray check
             elements.contentView.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Erro ao buscar tarefas.</div>`;
             appState.currentContent = [];
             return;
@@ -732,6 +764,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Função para renderizar tabela de tarefas
     function renderTasksTable(tasks) {
+        if (!Array.isArray(tasks)) { // Added Array.isArray check
+            tasks = [];
+        }
         // Ordena as tarefas: pendente > em andamento > concluída
         const statusOrder = { 'pendente': 0, 'em andamento': 1, 'concluída': 2 };
         tasks = tasks.slice().sort((a, b) => {
@@ -812,6 +847,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- FLASHCARDS ---
+    function renderFlashcards(flashcards, isEditMode, disciplinaId) {
+        if (!Array.isArray(flashcards)) {
+            flashcards = [];
+        }
+
+        let flashcardHtml = `<button onclick="window.goBackToDashboard()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
+
+        if (flashcards.length === 0) {
+            flashcardHtml += `
+                <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
+                    Ainda não há flashcards para esta disciplina.
+                </div>
+                <div style="text-align:center;">
+                    <button class="add-new-flashcard-btn">➕ Adicionar Flashcard</button>
+                </div>`;
+            elements.contentView.innerHTML = flashcardHtml;
+            elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
+            return;
+        }
+
+        const currentCard = flashcards[appState.currentFlashcardIndex];
+        const [front, back] = currentCard.card.split('::').map(s => s.trim());
+        const displayContent = appState.isFlashcardFlipped ? back : front;
+
+        flashcardHtml += `
+            <div class="flashcard-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 20px;">
+                <div class="flashcard" style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 12px; padding: 30px; width: 100%; max-width: 500px; min-height: 200px; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 1.5em; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.08); transition: transform 0.3s ease, background 0.3s ease;" data-id="${currentCard.id}">
+                    ${displayContent}
+                </div>
+                <div class="flashcard-controls" style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button id="prev-flashcard-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Anterior</button>
+                    <button id="flip-flashcard-btn" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Virar</button>
+                    <button id="next-flashcard-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Próximo</button>
+                </div>
+                ${isEditMode ? `
+                    <div class="flashcard-edit-controls" style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="crud-btn edit-flashcard-btn" data-id="${currentCard.id}" style="padding: 8px 15px; background: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
+                        <button class="crud-btn delete-flashcard-btn" data-id="${currentCard.id}" style="padding: 8px 15px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">🗑️ Excluir</button>
+                        <button class="add-new-flashcard-btn" style="padding: 8px 15px; background: #1976d2; color: white; border: none; border-radius: 6px; cursor: pointer;">➕ Adicionar Novo</button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+        elements.contentView.innerHTML = flashcardHtml;
+
+        // Add event listeners for flashcard navigation and flip
+        const flashcardElement = elements.contentView.querySelector('.flashcard');
+        const prevBtn = elements.contentView.querySelector('#prev-flashcard-btn');
+        const flipBtn = elements.contentView.querySelector('#flip-flashcard-btn');
+        const nextBtn = elements.contentView.querySelector('#next-flashcard-btn');
+
+        flashcardElement.onclick = () => {
+            appState.isFlashcardFlipped = !appState.isFlashcardFlipped;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+        flipBtn.onclick = () => {
+            appState.isFlashcardFlipped = !appState.isFlashcardFlipped;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+        prevBtn.onclick = () => {
+            appState.currentFlashcardIndex = (appState.currentFlashcardIndex - 1 + flashcards.length) % flashcards.length;
+            appState.isFlashcardFlipped = false;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+        nextBtn.onclick = () => {
+            appState.currentFlashcardIndex = (appState.currentFlashcardIndex + 1) % flashcards.length;
+            appState.isFlashcardFlipped = false;
+            renderFlashcards(flashcards, isEditMode, disciplinaId);
+        };
+
+        // Add event listeners for CRUD buttons if in edit mode
+        if (isEditMode) {
+            elements.contentView.querySelector('.edit-flashcard-btn').onclick = () => handleEdit('flashcard', currentCard.id);
+            elements.contentView.querySelector('.delete-flashcard-btn').onclick = () => handleDelete('flashcard', currentCard.id);
+            elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
+        }
+    }
+
     // --- MODAL DE PIZZA ---
     
     // Funções para desenhar o gráfico de pizza SVG
@@ -848,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderPizzaMenu() {
         elements.pizzaContainer.innerHTML = 'Carregando...';
         const { data, error } = await supabase.from('disciplina').select('*');
-        if (error || !data || data.length === 0) {
+        if (error || !Array.isArray(data) || data.length === 0) { // Added Array.isArray check
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Nenhuma disciplina encontrada.</div>';
             return;
         }
@@ -891,7 +1005,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderDisciplinaListInModal() {
         elements.pizzaContainer.innerHTML = 'Carregando...';
         const { data, error } = await supabase.from('disciplina').select('*');
-        if (error || !data) {
+        if (error || !Array.isArray(data)) { // Added Array.isArray check
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Erro ao carregar disciplinas.</div>';
             return;
         }
@@ -1005,6 +1119,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             link: data.link
                         };
                         break;
+                    case 'flashcard':
+                        valid = data.card;
+                        insertData = {
+                            id_disciplina: disciplinaId,
+                            id_usuario: userId,
+                            card: data.card
+                        };
+                        break;
                     default:
                         valid = false;
                 }
@@ -1029,6 +1151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             initialData: itemData,
             onSubmit: async (data) => {
                 await supabase.from(type).update(data).eq('id', id);
+                fetchContent(type, appState.currentDisciplinaId); // Re-fetch content after edit
             }
         });
     }
@@ -1126,7 +1249,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.editGearBtn.addEventListener('click', () => {
         appState.isEditMode = !appState.isEditMode;
         document.body.classList.toggle('edit-mode', appState.isEditMode);
-        // Se estiver em Conteúdo Extra, re-renderiza os cards de extra
+        // Re-renderiza o conteúdo atual para aplicar/remover botões de edição
         if (appState.currentContentType === 'extra') {
             fetchExtraContent(appState.currentDisciplinaId);
         } else {
@@ -1147,7 +1270,9 @@ document.addEventListener('DOMContentLoaded', () => {
     elements.menuTextBtn.onclick = () => fetchContent('text', appState.currentDisciplinaId);
     elements.menuVideoBtn.onclick = () => fetchContent('video', appState.currentDisciplinaId);
     elements.menuPracticeBtn.onclick = () => fetchContent('practice', appState.currentDisciplinaId);
-
+    elements.menuTasksBtn.onclick = () => fetchTasks(appState.currentDisciplinaId); // Added
+    elements.menuFlashcardsBtn.onclick = () => fetchContent('flashcard', appState.currentDisciplinaId); // Added
+    
     if (elements.menuExtraBtn) {
         elements.menuExtraBtn.onclick = async () => {
             appState.currentContentType = 'extra';
@@ -1245,6 +1370,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Adiciona função para abrir modal de tarefas (fora do DOMContentLoaded para ser global)
 function openTasksModal(disciplinaId) {
+    console.log('openTasksModal called with disciplinaId:', disciplinaId); // Added log
     const existingModal = document.querySelector('.modal-overlay[data-modal="tasks"]');
     if (existingModal) {
         existingModal.remove();
@@ -1301,13 +1427,13 @@ async function fetchTasksForModal(disciplinaId, container) {
         return;
     }
     
+    container.innerHTML = 'Carregando tarefas...';
+    
     const userId = localStorage.getItem('user_id');
     if (!userId) {
         container.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Usuário não autenticado.</div>`;
         return;
     }
-    
-    container.innerHTML = 'Carregando tarefas...';
     
     try {
         const { data: tasks, error } = await supabase
@@ -1316,7 +1442,7 @@ async function fetchTasksForModal(disciplinaId, container) {
             .eq('id_disciplina', String(disciplinaId))
             .eq('id_usuario', String(userId));
             
-        if (error) {
+        if (error || !Array.isArray(tasks)) { // Added Array.isArray check
             console.error('Erro ao buscar tarefas:', error);
             container.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Erro ao buscar tarefas: ${error.message}</div>`;
             return;
@@ -1350,6 +1476,9 @@ async function fetchTasksForModal(disciplinaId, container) {
 }
 
 function renderTasksTableForModal(tasks, disciplinaId) {
+    if (!Array.isArray(tasks)) { // Added Array.isArray check
+        tasks = [];
+    }
     const statusOrder = { 'pendente': 0, 'em andamento': 1, 'concluída': 2 };
     tasks = tasks.slice().sort((a, b) => {
         const aOrder = statusOrder[a.situacao] !== undefined ? statusOrder[a.situacao] : 99;
@@ -1500,6 +1629,109 @@ async function handleCreateTask(disciplinaId) {
 
 let annotationPopup = null;
 let currentSelection = null;
+let currentUtterance = null; // Variável para controlar a fala atual
+
+/**
+ * Lê um texto em voz alta usando a API de Síntese de Voz do navegador,
+ * buscando a voz mais natural disponível.
+ * @param {string} text - O texto a ser lido.
+ */
+function speakText(text) {
+    // Verifica se a API SpeechSynthesis é suportada
+    if (!window.speechSynthesis) {
+        console.warn("SpeechSynthesis API not supported in this browser.");
+        const ttsControlButton = document.getElementById('tts-control-btn');
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊'; // Reseta o botão
+        return;
+    }
+
+    // Para qualquer fala anterior para evitar sobreposição
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR'; // Definir idioma para português do Brasil
+    utterance.rate = 1.0; // Velocidade normal para um som mais natural
+    utterance.pitch = 1.0; // Tom normal
+
+    const ttsControlButton = document.getElementById('tts-control-btn');
+
+    utterance.onstart = () => {
+        if (ttsControlButton) ttsControlButton.innerHTML = '🤫'; // Ícone para parar
+    };
+
+    utterance.onend = () => {
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊'; // Ícone para ouvir de novo
+    };
+    
+    utterance.onerror = (event) => {
+        console.error('Erro na síntese de voz:', event.error);
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
+    };
+
+    currentUtterance = utterance;
+
+    const setVoiceAndSpeak = () => {
+        // Garante que as vozes estejam carregadas antes de tentar acessá-las
+        const voices = speechSynthesis.getVoices();
+        if (!voices || voices.length === 0) {
+            console.warn("No voices available or voices list is empty.");
+            speechSynthesis.speak(utterance); // Fallback to default if no voices
+            return;
+        }
+
+        const ptBrVoices = voices.filter(voice => voice.lang === 'pt-BR');
+        let selectedVoice = null;
+
+        // Prioriza vozes de alta qualidade conhecidas para pt-BR
+        const preferredNames = [/google/i, /natural/i, /felipe/i, /ricardo/i, /vitoria/i]; // Adicione nomes de vozes comuns em pt-BR
+        for (const name of preferredNames) {
+            selectedVoice = ptBrVoices.find(voice => name.test(voice.name));
+            if (selectedVoice) break;
+        }
+
+        // Se não encontrar, usa a padrão do navegador para o idioma
+        if (!selectedVoice) {
+            selectedVoice = ptBrVoices.find(voice => voice.default);
+        }
+
+        // Como último recurso, pega a primeira voz em português disponível
+        if (!selectedVoice && ptBrVoices.length > 0) {
+            selectedVoice = ptBrVoices[0];
+        }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+
+        speechSynthesis.speak(utterance);
+    };
+
+    // Tenta obter as vozes imediatamente. Se não estiverem disponíveis, espera por elas.
+    const initialVoices = speechSynthesis.getVoices();
+    if (initialVoices && initialVoices.length > 0) {
+        setVoiceAndSpeak();
+    } else {
+        // Se as vozes não estiverem prontas, espera que sejam carregadas
+        speechSynthesis.onvoiceschanged = () => {
+            // Remove o event listener depois que ele é disparado uma vez para evitar chamadas múltiplas
+            speechSynthesis.onvoiceschanged = null; 
+            setVoiceAndSpeak();
+        };
+    }
+}
+
+/**
+ * Para a leitura de texto que está em andamento.
+ */
+function stopSpeaking() {
+    if (window.speechSynthesis && speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+    const ttsControlButton = document.getElementById('tts-control-btn');
+    if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
+}
 
 /**
  * Inicializa o recurso de anotação, adicionando o listener de eventos.
@@ -1513,6 +1745,9 @@ function initAnnotationFeature() {
  * @param {MouseEvent} e - O evento do mouse.
  */
 function handleTextSelection(e) {
+    // Para qualquer fala em andamento quando uma nova seleção é feita
+    stopSpeaking();
+
     // Verifica se o clique foi dentro do modal de anotação
     if (e.target.closest('#annotation-popup')) {
         return;
@@ -1604,31 +1839,35 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
         </div>
         <div class="selected-text-data" style="display: none;" data-selected-text="${selectedText}"></div>
         <div class="popup-body">
-            <div class="annotation-section">
-                <label for="annotation-comment">Comentário:</label>
-                <textarea id="annotation-comment" placeholder="Adicione um comentário sobre este texto...">${hasExistingAnnotation ? existingAnnotation.comment : ''}</textarea>
-            </div>
-            
-            <div class="annotation-section">
-                <label for="annotation-css">Estilo CSS:</label>
-                <input type="text" id="annotation-css" placeholder="Selecione um estilo rápido acima ou digite CSS personalizado" value="${hasExistingAnnotation ? existingAnnotation.css : ''}">
-            </div>
-            
-            <div class="annotation-section">
-                <label>Estilos Rápidos:</label>
-                <div class="quick-styles">
-                    <button class="quick-style-btn" data-style="background-color: yellow; color: black;">🟡 Destaque</button>
-                    <button class="quick-style-btn" data-style="background-color: #ff6b6b; color: white;">🔴 Importante</button>
-                                               <button class="quick-style-btn" data-style="background-color: #4ecdc4; color: white;">🟢 Conceito</button>
-                           <button class="quick-style-btn" data-style="background-color: #45b7d1; color: white;">🔵 Definição</button>
-                           <button class="quick-style-btn" data-style="font-weight: bold; color: black;">⚫ Negrito</button>
-                           <button class="quick-style-btn" data-style="font-style: italic; color: black;">📝 Itálico</button>
-                </div>
-            </div>
-            
             <div class="ai-explanation">
-                <h4>🤖 Explicação IA</h4>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4>🤖 Explicação IA</h4>
+                    <button id="tts-control-btn" title="Ouvir explicação" style="background:none; border:none; cursor:pointer; font-size: 1.2em;">🔊</button>
+                </div>
                 <p class="explanation-text"></p>
+            </div>
+            <div class="annotation-controls">
+                <div class="annotation-section">
+                    <label for="annotation-comment">Comentário:</label>
+                    <textarea id="annotation-comment" placeholder="Adicione um comentário sobre este texto...">${hasExistingAnnotation ? existingAnnotation.comment : ''}</textarea>
+                </div>
+                
+                <div class="annotation-section">
+                    <label for="annotation-css">Estilo CSS:</label>
+                    <input type="text" id="annotation-css" placeholder="Selecione um estilo rápido acima ou digite CSS personalizado" value="${hasExistingAnnotation ? existingAnnotation.css : ''}">
+                </div>
+                
+                <div class="annotation-section">
+                    <label>Estilos Rápidos:</label>
+                    <div class="quick-styles">
+                        <button class="quick-style-btn" data-style="background-color: yellow; color: black;">🟡 Destaque</button>
+                        <button class="quick-style-btn" data-style="background-color: #ff6b6b; color: white;">🔴 Importante</button>
+                        <button class="quick-style-btn" data-style="background-color: #4ecdc4; color: white;">🟢 Conceito</button>
+                        <button class="quick-style-btn" data-style="background-color: #45b7d1; color: white;">🔵 Definição</button>
+                        <button class="quick-style-btn" data-style="font-weight: bold; color: black;">⚫ Negrito</button>
+                        <button class="quick-style-btn" data-style="font-style: italic; color: black;">📝 Itálico</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="popup-footer">
@@ -1660,8 +1899,8 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
 
     // Adiciona eventos aos botões do pop-up
     document.getElementById('save-annotation').onclick = saveAnnotation;
-    document.getElementById('cancel-annotation').onclick = () => annotationPopup.remove();
-    document.querySelector('.close-popup-btn').onclick = () => annotationPopup.remove();
+    document.getElementById('cancel-annotation').onclick = () => { annotationPopup.remove(); stopSpeaking(); }; // Adicionado stopSpeaking
+    document.querySelector('.close-popup-btn').onclick = () => { annotationPopup.remove(); stopSpeaking(); }; // Adicionado stopSpeaking
     
     // Adiciona evento para o botão de remover (se existir)
     const removeBtn = document.getElementById('remove-annotation');
@@ -1673,6 +1912,7 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
     document.addEventListener('click', function closeModalOnOutsideClick(e) {
         if (annotationPopup && !annotationPopup.contains(e.target)) {
             annotationPopup.remove();
+            stopSpeaking(); // Adicionado stopSpeaking
             document.removeEventListener('click', closeModalOnOutsideClick);
         }
     });
@@ -1710,6 +1950,21 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
             e.preventDefault();
             e.stopPropagation();
             generateAIExplanation();
+        };
+    }
+
+    // Adiciona evento ao botão de controle de TTS
+    const ttsControlButton = document.getElementById('tts-control-btn');
+    if (ttsControlButton) {
+        ttsControlButton.onclick = () => {
+            const textToSpeak = annotationPopup.querySelector('.explanation-text').textContent;
+            if (textToSpeak) {
+                if (speechSynthesis.speaking) {
+                    stopSpeaking();
+                } else {
+                    speakText(textToSpeak);
+                }
+            }
         };
     }
     
@@ -1791,7 +2046,6 @@ function initDragModal(modal) {
         
         // Aplica a nova posição
         modal.style.left = `${clampedLeft}px`;
-        modal.style.top = `${clampedTop}px`;
     }
     
     // Função para parar o arraste
@@ -1963,13 +2217,13 @@ async function loadAndApplyAnnotations(disciplinaId) {
         .select('*')
         .eq('id_disciplina', disciplinaId);
 
-    if (error) {
+    if (error || !Array.isArray(data)) { // Added Array.isArray check
         console.error('Erro ao carregar anotações:', error);
         return;
     }
 
     const contentView = document.getElementById('content-view');
-    if (!contentView || !data || data.length === 0) return;
+    if (!contentView || data.length === 0) return; // Removed !data as Array.isArray(data) handles null/undefined
 
     // Cria um elemento temporário para manipular o HTML de forma mais segura
     const tempDiv = document.createElement('div');
@@ -2051,7 +2305,17 @@ async function generateAIExplanation() {
     
     try {
         const explanation = await callAIExplanationAPI(selectedText);
-        explanationText.innerHTML = explanation;
+        
+        // Converte markdown (negrito/itálico) para HTML para exibição
+        const htmlExplanation = explanation
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/\n/g, '<br>');
+
+        explanationText.innerHTML = htmlExplanation;
+        
+        // Inicia a leitura automática com o texto puro (sem HTML)
+        speakText(explanation);
     } catch (error) {
         console.error('Erro ao gerar explicação:', error);
         explanationText.innerHTML = `<p style="color: #dc3545;">Erro ao gerar explicação: ${error.message}</p>`;
@@ -2071,20 +2335,19 @@ async function callAIExplanationAPI(text) {
     }
     
     const prompt = `
-Atue como um professor especialista e forneça uma explicação didática clara e acessível sobre o seguinte texto/conceito. Sua explicação deve:
+Atue como um especialista amigável que adora simplificar ideias complexas. Sua missão é explicar o texto abaixo da forma mais clara e concisa possível.
 
-1. **Ser clara e simples**: Use linguagem acessível, evitando jargões complexos
-2. **Ser educativa**: Explique o conceito de forma didática, como se estivesse ensinando para um estudante
-3. **Ser contextualizada**: Relacione com exemplos práticos quando possível
-4. **Ser concisa**: Mantenha a explicação objetiva, mas completa
-5. **Ser motivacional**: Incentive o aprendizado e a curiosidade
+1.  **Seja Breve:** A explicação deve ter no máximo 3 ou 4 frases. Vá direto ao ponto.
+2.  **Use Analogias:** Compare o conceito com algo do dia a dia para facilitar o entendimento.
+3.  **Linguagem Simples:** Evite jargões técnicos e palavras complicadas.
+4.  **Tom Engajador:** Mantenha um tom positivo e interessante, como se estivesse compartilhando uma curiosidade legal.
 
-**Texto para explicar:**
+Texto para Explicar:
 """
 ${text}
 """
 
-**Explicação didática:**
+Sua Explicação Rápida e Clara:
 `;
 
     try {
