@@ -4,6 +4,7 @@
     let isScrolling = false;
     let lastScrollTop = 0;
     let scrollDirection = 'down';
+    let isHovering = false; // Nova variável de estado para controlar o hover
     
     // Função para criar o botão se não existir
     function createAutoScrollButton() {
@@ -35,12 +36,15 @@
             autoScrollBtn.classList.remove('hidden');
             autoScrollBtn.classList.add('show');
         } else {
-            autoScrollBtn.classList.remove('show');
-            setTimeout(() => {
-                if (!autoScrollBtn.classList.contains('show')) {
-                    autoScrollBtn.classList.add('hidden');
-                }
-            }, 300);
+            // Só esconde se não estiver em hover
+            if (!isHovering) {
+                autoScrollBtn.classList.remove('show');
+                setTimeout(() => {
+                    if (!autoScrollBtn.classList.contains('show')) {
+                        autoScrollBtn.classList.add('hidden');
+                    }
+                }, 300);
+            }
         }
     }
     
@@ -93,10 +97,32 @@
         // Definir novo timeout para esconder o botão
         scrollTimeout = setTimeout(() => {
             isScrolling = false;
-            toggleScrollButton(false);
+            toggleScrollButton(false); // Esta chamada agora verificará 'isHovering'
         }, 1500); // Esconder após 1.5 segundos sem scroll
     });
     
+    // Event listeners para mouseenter e mouseleave para controlar o hover
+    autoScrollBtn.addEventListener('mouseenter', () => {
+        isHovering = true;
+        toggleScrollButton(true); // Garante que esteja visível ao passar o mouse
+        clearTimeout(scrollTimeout); // Impede que ele se esconda enquanto estiver em hover
+    });
+
+    autoScrollBtn.addEventListener('mouseleave', () => {
+        isHovering = false;
+        // Se não estiver rolando, esconde imediatamente. Caso contrário, o timeout de scroll cuidará disso.
+        if (!isScrolling) {
+            toggleScrollButton(false);
+        } else {
+            // Rearma o timeout de scroll para que ele se esconda após a inatividade de scroll E a saída do mouse.
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                isScrolling = false;
+                toggleScrollButton(false);
+            }, 1500);
+        }
+    });
+
     // Event listener para clique no botão
     autoScrollBtn.addEventListener('click', function(e) {
         e.preventDefault();
@@ -142,4 +168,4 @@
     // Ajustar posição inicial e em mudanças de tamanho
     adjustButtonPosition();
     window.addEventListener('resize', adjustButtonPosition);
-})(); 
+})();

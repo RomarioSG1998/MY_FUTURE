@@ -4,6 +4,63 @@ const SUPABASE_URL = 'https://zzrylgsjksrjotgcwavt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cnlsZ3Nqa3Nyam90Z2N3YXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4Mjc0OTYsImV4cCI6MjA2NDQwMzQ5Nn0.caBlCmOqKonuxTPacPIHH1FeVZFr8AJKwpz_v1Q3BwM';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// Helper function for date formatting
+function formatDisplayDate(isoString) {
+    if (!isoString) return '';
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleDateString('pt-BR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        console.error("Error formatting date:", e);
+        return isoString; // Fallback to raw string
+    }
+}
+
+// New helper function for spaced repetition logic
+function getSpacedRepetitionStatus(card) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
+
+    const cadastroDate = new Date(card.data_cadastro);
+    cadastroDate.setHours(0, 0, 0, 0);
+
+    let baseDate = cadastroDate;
+    let intervalDays = 0; // This will be the interval for the *next* review
+
+    if (card.data_last_view) {
+        const lastViewDate = new Date(card.data_last_view);
+        lastViewDate.setHours(0, 0, 0, 0);
+        baseDate = lastViewDate;
+
+        // Calculate days passed since last review
+        const daysSinceLastReview = Math.max(0, Math.floor((today - lastViewDate) / (1000 * 60 * 60 * 24)));
+        
+        // The next interval is based on the days passed since the last review,
+        // multiplied by a factor (1.3 for 30% increase).
+        intervalDays = Math.max(1, Math.floor(daysSinceLastReview * 1.3)); // Ensure at least 1 day
+    } else {
+        // For the very first review, make it available after 1 day from cadastro.
+        intervalDays = 1;
+    }
+
+    const nextReviewDate = new Date(baseDate);
+    nextReviewDate.setDate(baseDate.getDate() + intervalDays);
+
+    const isReadyForReview = today >= nextReviewDate;
+
+    return {
+        nextReviewDate: nextReviewDate.toISOString().split('T')[0], // YYYY-MM-DD format
+        isReadyForReview: isReadyForReview,
+        statusText: isReadyForReview ? 'Pronto para Revisar' : `Próxima Revisão: ${formatDisplayDate(nextReviewDate.toISOString())}`
+    };
+}
+
 // Função genérica para criar modais de CRUD (deve estar no topo do arquivo)
 function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
     const crudModalRoot = document.getElementById('crud-modal-root');
@@ -30,8 +87,8 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
     }).join('');
 
     const modalHtml = `
-        <div class="modal-overlay crud-modal" style="z-index: 2147483647 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
-            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 400px; width: 100%; position: relative;">
+        <div class="modal-overlay crud-modal" style="z-index: 2001 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
+            <div class="modal-content" style="z-index: 2001 !important; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 400px; width: 100%; position: relative;">
                 <div class="modal-header" style="position: sticky; top: 0; background: #fff; z-index: 1; padding: 16px; border-bottom: 1px solid #eee;">
                     <div class="header-actions" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 style="margin: 0;">${title}</h3>
@@ -91,8 +148,8 @@ function createCrudModal({ title, formFields, onSubmit, initialData = {} }) {
 // Função para criar modal de confirmação personalizado
 function showConfirmModal(message, onConfirm, onCancel = null) {
     const modalHtml = `
-        <div class="modal-overlay crud-modal" style="z-index: 2147483647 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
-            <div class="modal-content" style="z-index: 2147483647 !important; background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 32px 24px 24px 24px; max-width: 400px; width: 100%; position: relative; text-align: center;">
+        <div class="modal-overlay crud-modal" style="z-index: 2001 !important; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center;">
+            <div class="modal-content" style="z-index: 2001 !important; background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); padding: 32px 24px 24px 24px; max-width: 400px; width: 100%; position: relative; text-align: center;">
                 <div style="font-size: 3em; margin-bottom: 16px;">⚠️</div>
                 <h3 style="margin: 0 0 16px 0; color: #333; font-size: 1.3em;">Confirmação</h3>
                 <p style="margin: 0 0 24px 0; color: #666; line-height: 1.5;">${message}</p>
@@ -179,11 +236,11 @@ function getCrudConfig(type) {
         practice: {
             label: 'Prática',
             fields: [
-                 { value: 'Teoria', label: 'Teoria'},
-                 { value: 'Exemplo', label: 'Exemplo'},
-                 { value: 'Exercício', label: 'Exercício'},
-                 { name: 'tipo', type: 'select', options: [
-                 ]},
+                { name: 'tipo', type: 'select', options: [
+                    { value: 'Teoria', label: 'Teoria' },
+                    { value: 'Exemplo', label: 'Exemplo' },
+                    { value: 'Exercício', label: 'Exercício' }
+                ]},
                 { name: 'texto', type: 'textarea', placeholder: 'Descrição da prática' },
                 { name: 'link', type: 'text', placeholder: 'Link (Opcional)' },
             ]
@@ -220,7 +277,10 @@ function getCrudConfig(type) {
         flashcard: {
             label: 'Flashcard',
             fields: [
-                { name: 'card', type: 'textarea', placeholder: 'Frente::Verso (separe com ::)' }
+                { name: 'card', type: 'textarea', placeholder: 'Frente || Verso || Descrição da Imagem' },
+                // data_cadastro and data_last_view are managed by the system, not user input
+                // { name: 'data_cadastro', type: 'text', placeholder: 'Data de Cadastro', readonly: true, hideOnCreate: true },
+                // { name: 'data_last_view', type: 'text', placeholder: 'Última Visualização', readonly: true, hideOnCreate: true }
             ]
         }
     };
@@ -266,7 +326,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const appState = {
         isEditMode: false,
         currentDisciplinaId: null,
-        currentContent: [],
+        currentContent: [], // Filtered flashcards (ready for review)
+        allFlashcards: [], // All flashcards (for table view)
         currentContentType: 'text', // 'text', 'video', 'practice', 'flashcard'
         currentFlashcardIndex: 0, // For flashcards navigation
         isFlashcardFlipped: false // For flashcards
@@ -303,6 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.currentDisciplinaId = null;
         appState.currentFlashcardIndex = 0; // Reset flashcard index
         appState.isFlashcardFlipped = false; // Reset flashcard flip state
+        appState.allFlashcards = []; // Clear all flashcards when leaving
     }
 
     function showContentView() {
@@ -723,9 +785,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (error || !Array.isArray(data)) { // Added Array.isArray check
             console.error(`Erro ao buscar ${type}:`, error);
             appState.currentContent = [];
+            appState.allFlashcards = []; // Clear all flashcards if error
             console.log(`Content for ${type} is empty or errored.`); // Added log
         } else {
-            appState.currentContent = data;
+            if (type === 'flashcard') {
+                appState.allFlashcards = data; // Store all flashcards
+                // Filter flashcards based on spaced repetition logic
+                appState.currentContent = data.filter(card => getSpacedRepetitionStatus(card).isReadyForReview);
+            } else {
+                appState.currentContent = data;
+            }
             console.log(`Fetched ${data.length} items for ${type}.`, data); // Added log
         }
         
@@ -858,19 +927,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (flashcards.length === 0) {
             flashcardHtml += `
                 <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
-                    Ainda não há flashcards para esta disciplina.
+                    Nenhum flashcard pronto para revisão no momento.
                 </div>
                 <div style="text-align:center;">
-                    <button class="add-new-flashcard-btn">➕ Adicionar Flashcard</button>
+                    <button id="view-all-flashcards-btn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Ver Todos os Flashcards</button>
                 </div>`;
+            if (isEditMode) {
+                flashcardHtml += `<div style="text-align:center; margin-top:20px;"><button class="add-new-flashcard-btn">➕ Adicionar Flashcard</button></div>`;
+            }
             elements.contentView.innerHTML = flashcardHtml;
-            elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
+            elements.contentView.querySelector('#view-all-flashcards-btn').onclick = () => {
+                renderAllFlashcardsTable(appState.allFlashcards, isEditMode, disciplinaId);
+            };
+            if (isEditMode) {
+                elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
+            }
             return;
         }
 
         const currentCard = flashcards[appState.currentFlashcardIndex];
-        const [front, back] = currentCard.card.split('::').map(s => s.trim());
+        // Split by '||' to match the new format
+        const parts = currentCard.card.split('||').map(s => s.trim());
+        const front = parts[0] || '';
+        const back = parts[1] || '';
+        const imageDesc = parts[2] || ''; // Keep image description if present
+
         const displayContent = appState.isFlashcardFlipped ? back : front;
+
+        // Update data_last_view for the current card immediately when it's rendered
+        if (currentCard && currentCard.id) {
+            supabase.from('flashcard').update({ data_last_view: new Date().toISOString() }).eq('id', currentCard.id)
+                .then(({ error }) => {
+                    if (error) console.error("Error updating data_last_view:", error);
+                    else {
+                        // Update the local object to reflect the change without re-fetching everything
+                        currentCard.data_last_view = new Date().toISOString();
+                    }
+                });
+        }
 
         flashcardHtml += `
             <div class="flashcard-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 20px;">
@@ -882,6 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button id="flip-flashcard-btn" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Virar</button>
                     <button id="next-flashcard-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Próximo</button>
                 </div>
+                <button id="view-all-flashcards-btn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Ver Todos os Flashcards</button>
                 ${isEditMode ? `
                     <div class="flashcard-edit-controls" style="display: flex; gap: 10px; margin-top: 20px;">
                         <button class="crud-btn edit-flashcard-btn" data-id="${currentCard.id}" style="padding: 8px 15px; background: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
@@ -898,6 +993,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = elements.contentView.querySelector('#prev-flashcard-btn');
         const flipBtn = elements.contentView.querySelector('#flip-flashcard-btn');
         const nextBtn = elements.contentView.querySelector('#next-flashcard-btn');
+        const viewAllBtn = elements.contentView.querySelector('#view-all-flashcards-btn');
 
         flashcardElement.onclick = () => {
             appState.isFlashcardFlipped = !appState.isFlashcardFlipped;
@@ -917,6 +1013,9 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.isFlashcardFlipped = false;
             renderFlashcards(flashcards, isEditMode, disciplinaId);
         };
+        viewAllBtn.onclick = () => {
+            renderAllFlashcardsTable(appState.allFlashcards, isEditMode, disciplinaId);
+        };
 
         // Add event listeners for CRUD buttons if in edit mode
         if (isEditMode) {
@@ -925,6 +1024,69 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
         }
     }
+
+    // NEW FUNCTION: Render all flashcards in a table
+    function renderAllFlashcardsTable(flashcards, isEditMode, disciplinaId) {
+        let html = `<button onclick="window.goBackToFlashcards()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
+        if (!Array.isArray(flashcards) || flashcards.length === 0) {
+            html += `<div style='color:var(--danger-color); text-align:center; margin-bottom:16px;'>Nenhum flashcard encontrado para esta disciplina.</div>`;
+            if (isEditMode) {
+                html += `<div style='text-align:center;'><button class='add-new-flashcard-btn'>➕ Adicionar Novo Flashcard</button></div>`;
+            }
+            elements.contentView.innerHTML = html;
+            if (isEditMode) {
+                const addBtn = elements.contentView.querySelector('.add-new-flashcard-btn');
+                if (addBtn) addBtn.onclick = () => handleCreate('flashcard', disciplinaId);
+            }
+            return;
+        }
+
+        html += `
+            <h2 style='text-align:center;'>Todos os Flashcards</h2>
+            <table class='crud-table no-annotation' style='width:100%;margin-bottom:16px;'>
+                <thead>
+                    <tr>
+                        <th>Conteúdo do Flashcard</th>
+                        ${isEditMode ? '<th>Ações</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${flashcards.map(card => {
+                        const fullContent = card.card;
+                        return `
+                            <tr>
+                                <td>${fullContent}</td>
+                                ${isEditMode ? `<td>
+                                    <button class='edit-flashcard-btn' data-id='${card.id}'>✏️</button>
+                                    <button class='delete-flashcard-btn' data-id='${card.id}'>🗑️</button>
+                                </td>` : ''}
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+        if (isEditMode) {
+            html += `<div style='text-align:center;'><button class='add-new-flashcard-btn'>➕ Adicionar Novo Flashcard</button></div>`;
+        }
+        elements.contentView.innerHTML = html;
+
+        if (isEditMode) {
+            elements.contentView.querySelectorAll('.edit-flashcard-btn').forEach(btn => {
+                btn.onclick = () => handleEdit('flashcard', btn.dataset.id);
+            });
+            elements.contentView.querySelectorAll('.delete-flashcard-btn').forEach(btn => {
+                btn.onclick = () => handleDelete('flashcard', btn.dataset.id);
+            });
+            const addBtn = elements.contentView.querySelector('.add-new-flashcard-btn');
+            if (addBtn) addBtn.onclick = () => handleCreate('flashcard', disciplinaId);
+        }
+    }
+
+    // Function to go back to single flashcard view
+    window.goBackToFlashcards = () => {
+        renderFlashcards(appState.currentContent, appState.isEditMode, appState.currentDisciplinaId);
+    };
 
     // --- MODAL DE PIZZA ---
     
@@ -1124,7 +1286,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         insertData = {
                             id_disciplina: disciplinaId,
                             id_usuario: userId,
-                            card: data.card
+                            card: data.card,
+                            data_cadastro: new Date().toISOString() // Set data_cadastro on creation
                         };
                         break;
                     default:
@@ -1150,7 +1313,13 @@ document.addEventListener('DOMContentLoaded', () => {
             formFields: config.fields,
             initialData: itemData,
             onSubmit: async (data) => {
-                await supabase.from(type).update(data).eq('id', id);
+                const updateData = { ...data };
+                // For flashcards, data_last_view is updated on view, not necessarily on edit.
+                // If you want to update it on edit, uncomment the line below.
+                // if (type === 'flashcard') {
+                //     updateData.data_last_view = new Date().toISOString();
+                // }
+                await supabase.from(type).update(updateData).eq('id', id);
                 fetchContent(type, appState.currentDisciplinaId); // Re-fetch content after edit
             }
         });
@@ -1442,7 +1611,7 @@ async function fetchTasksForModal(disciplinaId, container) {
             .eq('id_disciplina', String(disciplinaId))
             .eq('id_usuario', String(userId));
             
-        if (error || !Array.isArray(tasks)) { // Added Array.isArray check
+        if (error) {
             console.error('Erro ao buscar tarefas:', error);
             container.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Erro ao buscar tarefas: ${error.message}</div>`;
             return;
@@ -1528,7 +1697,7 @@ function renderTasksTableForModal(tasks, disciplinaId) {
 }
 
 function handleCreateTaskModal(disciplinaId, container) {
-    const userId = localStorage.getItem('user_id');
+    const userId = localStorage.localStorage.getItem('user_id');
     const today = new Date();
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -1758,6 +1927,16 @@ function handleTextSelection(e) {
         const selection = window.getSelection();
         const selectedText = selection.toString().trim();
 
+        // Verifica se a seleção está dentro de um elemento com a classe 'no-annotation'
+        if (selection.anchorNode && selection.anchorNode.parentElement.closest('.no-annotation')) {
+            // Se um pop-up existir de uma seleção anterior, remove-o
+            if (annotationPopup) {
+                annotationPopup.remove();
+                annotationPopup = null;
+            }
+            return; // Sai da função se a anotação estiver desabilitada para esta área
+        }
+
         // Remove pop-up anterior se existir
         if (annotationPopup) {
             annotationPopup.remove();
@@ -1822,7 +2001,8 @@ function handleTextSelection(e) {
 function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnnotation = null) {
     annotationPopup = document.createElement('div');
     annotationPopup.id = 'annotation-popup';
-    
+    annotationPopup.style.zIndex = '2000'; // Ajustado para ser menor que o modal de CRUD
+
     // Armazena o texto selecionado para uso posterior
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
@@ -1873,6 +2053,7 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
         <div class="popup-footer">
             <div class="footer-right">
                 <button id="ai-explain-btn" class="btn-ai-explain">🤖 Explicar IA</button>
+                <button id="create-flashcard-btn" class="btn-ai-explain" style="display:none;">🎴 Criar Flashcard</button>
                 <button id="cancel-annotation" class="btn-cancel">Cancelar</button>
                 ${removeButton}
                 <button id="save-annotation" class="btn-save">${saveButtonText}</button>
@@ -1967,6 +2148,18 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
             }
         };
     }
+
+    // Adiciona evento ao botão "Criar Flashcard"
+    const createFlashcardBtn = document.getElementById('create-flashcard-btn');
+    if (createFlashcardBtn) {
+        createFlashcardBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const selectedText = annotationPopup.querySelector('.selected-text-data').getAttribute('data-selected-text');
+            const aiFlashcardContent = annotationPopup.querySelector('.explanation-text').getAttribute('data-ai-flashcard-content'); // Pega o conteúdo do flashcard já formatado
+            createFlashcardFromAI(selectedText, aiFlashcardContent);
+        };
+    }
     
     // Foca no textarea
     document.getElementById('annotation-comment').focus();
@@ -2046,6 +2239,7 @@ function initDragModal(modal) {
         
         // Aplica a nova posição
         modal.style.left = `${clampedLeft}px`;
+        modal.style.top = `${clampedTop}px`;
     }
     
     // Função para parar o arraste
@@ -2128,7 +2322,7 @@ async function saveAnnotation() {
 
             if (error) {
                 console.error('Erro ao salvar anotação:', error);
-                alert('Falha ao salvar a anotação: ' + error.message);
+                alert('Falha ao salvar o flashcard: ' + error.message);
                 // Reverter a alteração no DOM em caso de erro
                 span.parentNode.insertBefore(document.createTextNode(selectedText), span);
                 span.remove();
@@ -2282,52 +2476,9 @@ async function loadAndApplyAnnotations(disciplinaId) {
 }
 
 /**
- * Gera explicação da IA para o texto selecionado
+ * Nova função: Chama a API do Gemini para gerar uma explicação DETALHADA.
  */
-async function generateAIExplanation() {
-    // Obtém o texto selecionado armazenado no modal
-    const selectedTextData = document.querySelector('.selected-text-data');
-    const selectedText = selectedTextData ? selectedTextData.getAttribute('data-selected-text') : '';
-    
-    const aiExplanationDiv = document.querySelector('.ai-explanation');
-    const explanationText = aiExplanationDiv.querySelector('.explanation-text');
-    const aiExplainBtn = document.getElementById('ai-explain-btn');
-    
-    if (!selectedText) {
-        alert('Por favor, selecione um texto primeiro.');
-        return;
-    }
-    
-    // Mostra loading
-    aiExplanationDiv.classList.add('show');
-    explanationText.innerHTML = '<div class="loading">Analisando o texto...</div>';
-    aiExplainBtn.disabled = true;
-    
-    try {
-        const explanation = await callAIExplanationAPI(selectedText);
-        
-        // Converte markdown (negrito/itálico) para HTML para exibição
-        const htmlExplanation = explanation
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\n/g, '<br>');
-
-        explanationText.innerHTML = htmlExplanation;
-        
-        // Inicia a leitura automática com o texto puro (sem HTML)
-        speakText(explanation);
-    } catch (error) {
-        console.error('Erro ao gerar explicação:', error);
-        explanationText.innerHTML = `<p style="color: #dc3545;">Erro ao gerar explicação: ${error.message}</p>`;
-    } finally {
-        aiExplainBtn.disabled = false;
-    }
-}
-
-/**
- * Chama a API do Gemini para gerar explicação didática
- */
-async function callAIExplanationAPI(text) {
+async function callAIDetailedExplanationAPI(text) {
     const geminiApiKey = 'AIzaSyAI-H7rdl-aPkxFJZn9FU6hrLlMKVG96ro';
     
     if (!geminiApiKey || geminiApiKey === 'SUA_CHAVE_DE_API_VAI_AQUI') {
@@ -2335,19 +2486,14 @@ async function callAIExplanationAPI(text) {
     }
     
     const prompt = `
-Atue como um especialista amigável que adora simplificar ideias complexas. Sua missão é explicar o texto abaixo da forma mais clara e concisa possível.
+Explique o seguinte texto de forma didatica e contextualizada, como se estivesse ensinando a um aluno. Foque em fornecer uma compreensão  do conceito, exemplos se aplicável, e qualquer informação relevante para o entendimento completo. Não use o formato de flashcard. Apenas a explicação. Use no maximo 2 paragrafos curtos.
 
-1.  **Seja Breve:** A explicação deve ter no máximo 3 ou 4 frases. Vá direto ao ponto.
-2.  **Use Analogias:** Compare o conceito com algo do dia a dia para facilitar o entendimento.
-3.  **Linguagem Simples:** Evite jargões técnicos e palavras complicadas.
-4.  **Tom Engajador:** Mantenha um tom positivo e interessante, como se estivesse compartilhando uma curiosidade legal.
-
-Texto para Explicar:
+Texto para explicar:
 """
 ${text}
 """
 
-Sua Explicação Rápida e Clara:
+Explicação detalhada:
 `;
 
     try {
@@ -2361,7 +2507,164 @@ Sua Explicação Rápida e Clara:
         return response.text();
 
     } catch (error) {
-        console.error("Erro detalhado na chamada da API do Gemini:", error);
-        throw new Error("Falha ao comunicar com a IA. Verifique sua chave de API e a conexão.");
+        console.error("Erro detalhado na chamada da API do Gemini para explicação:", error);
+        throw new Error("Falha ao comunicar com a IA para explicação. Verifique sua chave de API e a conexão.");
     }
+}
+
+/**
+ * Função existente: Chama a API do Gemini para gerar o conteúdo do flashcard no formato específico.
+ */
+async function callAIExplanationAPI(text) {
+    const geminiApiKey = 'AIzaSyAI-H7rdl-aPkxFJZn9FU6hrLlMKVG96ro';
+    
+    if (!geminiApiKey || geminiApiKey === 'SUA_CHAVE_DE_API_VAI_AQUI') {
+        throw new Error("A chave da API não foi configurada.");
+    }
+    
+    const prompt = `
+Atue EXCLUSIVAMENTE como um gerador de flashcards. Sua única saída deve ser o flashcard no formato "Frente || Verso || Descrição da Imagem".
+
+REGRAS RÍGIDAS PARA CADA SEÇÃO:
+1.  **Frente (Pergunta)**: Uma pergunta simples e direta. MÁXIMO 4 PALAVRAS.
+2.  **Verso (Resposta)**: Uma resposta detalhada e contextualizada, mas ainda concisa para um flashcard. MÁXIMO 15 PALAVRAS.
+3.  **Descrição da Imagem**: Uma descrição MUITO breve da imagem. MÁXIMO 5 PALAVRAS. Descreva algo relacionado ao contexto.
+
+FORMATO DE SAÍDA OBRIGATÓRIO:
+"Frente da Pergunta || Verso da Resposta || Descrição da Imagem"
+
+NÃO inclua:
+-   Qualquer introdução ou saudação.
+-   Qualquer conclusão ou despedida.
+-    Qualquer texto explicativo sobre o flashcard.
+-   Qualquer texto fora do formato "Frente || Verso || Descrição da Imagem".
+
+Exemplo para o texto "A fotossíntese é o processo pelo qual as plantas convertem luz em energia.":
+Plantas fazem energia? || Sim, através da fotossíntese, convertendo luz solar em glicose e oxigênio, essencial para a vida na Terra. || Folha verde com sol.
+
+Texto para transformar em Flashcard:
+"""
+${text}
+"""
+
+Flashcard:
+`;
+
+    try {
+        const { GoogleGenerativeAI } = await import('https://esm.run/@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(geminiApiKey);
+        
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        
+        return response.text();
+
+    } catch (error) {
+        console.error("Erro detalhado na chamada da API do Gemini para flashcard:", error);
+        throw new Error("Falha ao comunicar com a IA para flashcard. Verifique sua chave de API e a conexão.");
+    }
+}
+
+/**
+ * Gera explicação da IA para o texto selecionado e prepara o flashcard.
+ */
+async function generateAIExplanation() {
+    // Obtém o texto selecionado armazenado no modal
+    const selectedTextData = document.querySelector('.selected-text-data');
+    const selectedText = selectedTextData ? selectedTextData.getAttribute('data-selected-text') : '';
+    
+    const aiExplanationDiv = document.querySelector('.ai-explanation');
+    const explanationText = aiExplanationDiv.querySelector('.explanation-text');
+    const aiExplainBtn = document.getElementById('ai-explain-btn');
+    const createFlashcardBtn = document.getElementById('create-flashcard-btn');
+    
+    if (!selectedText) {
+        alert('Por favor, selecione um texto primeiro.');
+        return;
+    }
+    
+    // Mostra loading para a explicação detalhada
+    aiExplanationDiv.classList.add('show');
+    explanationText.innerHTML = '<div class="loading">Gerando explicação detalhada...</div>';
+    aiExplainBtn.disabled = true;
+    if (createFlashcardBtn) createFlashcardBtn.style.display = 'none'; // Esconde enquanto carrega
+    
+    try {
+        // 1. Chama a API para gerar a explicação DETALHADA
+        const detailedExplanation = await callAIDetailedExplanationAPI(selectedText);
+        explanationText.innerHTML = detailedExplanation; // Exibe a explicação detalhada
+        
+        // 2. Agora, chama a API para gerar o conteúdo do flashcard (conciso)
+        explanationText.innerHTML += '<div class="loading" style="margin-top: 10px;">Preparando flashcard...</div>'; // Mensagem de carregamento para o flashcard
+        const flashcardContent = await callAIExplanationAPI(selectedText);
+        
+        // Armazena o conteúdo do flashcard em um atributo de dados para uso posterior
+        explanationText.setAttribute('data-ai-flashcard-content', flashcardContent);
+        
+        // Remove a mensagem de carregamento do flashcard
+        const loadingDiv = explanationText.querySelector('.loading');
+        if (loadingDiv) loadingDiv.remove();
+
+        // Inicia a leitura automática com o texto puro da explicação detalhada
+        speakText(detailedExplanation);
+
+        // Mostra e habilita o botão de criar flashcard
+        if (createFlashcardBtn) createFlashcardBtn.style.display = 'inline-flex';
+    } catch (error) {
+        console.error('Erro ao gerar explicação ou flashcard:', error);
+        explanationText.innerHTML = `<p style="color: #dc3545;">Erro: ${error.message}</p>`;
+        if (createFlashcardBtn) createFlashcardBtn.style.display = 'none'; // Mantém escondido em caso de erro
+    } finally {
+        aiExplainBtn.disabled = false;
+    }
+}
+
+/**
+ * Cria um flashcard a partir do texto selecionado e da explicação da IA.
+ * Abre um modal para o usuário confirmar e editar antes de salvar.
+ * @param {string} selectedText - O texto selecionado pelo usuário (frente do flashcard).
+ * @param {string} aiFlashcardContent - O conteúdo do flashcard já formatado pela IA.
+ */
+async function createFlashcardFromAI(selectedText, aiFlashcardContent) {
+    const disciplinaId = window.appState.currentDisciplinaId;
+    const userId = localStorage.getItem('user_id');
+
+    if (!disciplinaId || !userId) {
+        alert('Erro: ID da disciplina ou do usuário não encontrado. Por favor, selecione uma disciplina.');
+        return;
+    }
+
+    // aiFlashcardContent já contém o conteúdo formatado "Frente || Verso || Descrição da Imagem"
+    const defaultCardContent = aiFlashcardContent;
+
+    createCrudModal({
+        title: 'Confirmar Flashcard',
+        formFields: [
+            { name: 'card', type: 'textarea', placeholder: 'Frente || Verso || Descrição da Imagem' }
+        ],
+        initialData: { card: defaultCardContent },
+        onSubmit: async (data) => {
+            if (!data.card.trim()) {
+                alert('O conteúdo do flashcard não pode estar vazio.');
+                return;
+            }
+            const { error } = await supabase.from('flashcard').insert([{
+                id_disciplina: disciplinaId,
+                id_usuario: userId,
+                card: data.card.trim(),
+                data_cadastro: new Date().toISOString() // Set data_cadastro on creation
+            }]);
+
+            if (error) {
+                console.error('Erro ao salvar flashcard:', error);
+                alert('Falha ao salvar o flashcard: ' + error.message);
+            } else {
+                alert('Flashcard salvo com sucesso!');
+                if (window.appState.currentContentType === 'flashcard') {
+                    fetchContent('flashcard', disciplinaId);
+                }
+            }
+        }
+    });
 }

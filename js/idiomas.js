@@ -1,100 +1,65 @@
+"use strict";
 // --- CONFIGURAÇÃO INICIAL E SUPABASE ---
 const SUPABASE_URL = 'https://zzrylgsjksrjotgcwavt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6cnlsZ3Nqa3Nyam90Z2N3YXZ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg4Mjc0OTYsImV4cCI6MjA2NDQwMzQ5Nn0.caBlCmOqKonuxTPacPIHH1FeVZFr8AJKwpz_v1Q3BwM';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- TEXT-TO-SPEECH ---
-let currentUtterance = null;
-
-/**
- * Lê um texto em voz alta usando a API de Síntese de Voz do navegador,
- * buscando a voz mais natural disponível.
- * @param {string} text - O texto a ser lido.
- */
-function speakText(text) {
-    // Para qualquer fala anterior para evitar sobreposição
-    if (speechSynthesis.speaking) {
-        speechSynthesis.cancel();
+// Helper function for date formatting
+function formatDisplayDate(isoString) {
+    if (!isoString) return '';
+    try {
+        const date = new Date(isoString);
+        return date.toLocaleDateString('pt-BR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (e) {
+        console.error("Error formatting date:", e);
+        return isoString; // Fallback to raw string
     }
+}
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'en-US';
-    utterance.rate = 1.0; // Velocidade normal para um som mais natural
-    utterance.pitch = 1.0; // Tom normal
+// New helper function for spaced repetition logic
+function getSpacedRepetitionStatus(card) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
 
-    const ttsControlButton = document.getElementById('tts-control-btn');
+    const cadastroDate = new Date(card.data_cadastro);
+    cadastroDate.setHours(0, 0, 0, 0);
 
-    utterance.onstart = () => {
-        if (ttsControlButton) ttsControlButton.innerHTML = '🤫'; // Ícone para parar
-    };
+    let baseDate = cadastroDate;
+    let intervalDays = 0; // This will be the interval for the *next* review
 
-    utterance.onend = () => {
-        if (ttsControlButton) ttsControlButton.innerHTML = '🔊'; // Ícone para ouvir de novo
-    };
-    
-    utterance.onerror = (event) => {
-        console.error('Erro na síntese de voz:', event.error);
-        if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
-    };
+    if (card.data_last_view) {
+        const lastViewDate = new Date(card.data_last_view);
+        lastViewDate.setHours(0, 0, 0, 0);
+        baseDate = lastViewDate;
 
-    currentUtterance = utterance;
-
-    const setVoiceAndSpeak = () => {
-        const voices = speechSynthesis.getVoices();
-        if (voices.length === 0) {
-            // Se as vozes ainda não carregaram, fala com a padrão.
-            speechSynthesis.speak(utterance);
-            return;
-        }
-
-        const usVoices = voices.filter(voice => voice.lang === 'en-US');
-        let selectedVoice = null;
-
-        // Prioriza vozes de alta qualidade conhecidas
-        const preferredNames = [/google/i, /natural/i, /zira/i, /samantha/i];
-        for (const name of preferredNames) {
-            selectedVoice = usVoices.find(voice => name.test(voice.name));
-            if (selectedVoice) break;
-        }
-
-        // Se não encontrar, usa a padrão do navegador para o idioma
-        if (!selectedVoice) {
-            selectedVoice = usVoices.find(voice => voice.default);
-        }
-
-        // Como último recurso, pega a primeira voz em inglês disponível
-        if (!selectedVoice && usVoices.length > 0) {
-            selectedVoice = usVoices[0];
-        }
-
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-        }
-
-        speechSynthesis.speak(utterance);
-    };
-
-    // A lista de vozes pode carregar de forma assíncrona.
-    // Este é o método mais seguro para garantir que a lista esteja disponível.
-    if (speechSynthesis.getVoices().length > 0) {
-        setVoiceAndSpeak();
+        // Calculate days passed since last review
+        const daysSinceLastReview = Math.max(0, Math.floor((today - lastViewDate) / (1000 * 60 * 60 * 24)));
+        
+        // The next interval is based on the days passed since the last review,
+        // multiplied by a factor (1.3 for 30% increase).
+        intervalDays = Math.max(1, Math.floor(daysSinceLastReview * 1.3)); // Ensure at least 1 day
     } else {
-        speechSynthesis.onvoiceschanged = setVoiceAndSpeak;
+        // For the very first review, make it available after 1 day from cadastro.
+        intervalDays = 1;
     }
+
+    const nextReviewDate = new Date(baseDate);
+    nextReviewDate.setDate(baseDate.getDate() + intervalDays);
+
+    const isReadyForReview = today >= nextReviewDate;
+
+    return {
+        nextReviewDate: nextReviewDate.toISOString().split('T')[0], // YYYY-MM-DD format
+        isReadyForReview: isReadyForReview,
+        statusText: isReadyForReview ? 'Pronto para Revisar' : `Próxima Revisão: ${formatDisplayDate(nextReviewDate.toISOString())}`
+    };
 }
-
-
-/**
- * Para a leitura de texto que está em andamento.
- */
-function stopSpeaking() {
-    if (speechSynthesis.speaking) {
-        speechSynthesis.cancel();
-    }
-    const ttsControlButton = document.getElementById('tts-control-btn');
-    if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
-}
-
 
 // Função global para gerenciar o arrasto do botão de vídeo
 window.handleVideoButtonDrag = function(event, button) {
@@ -408,7 +373,9 @@ function getCrudConfig(type) {
         flashcard: {
             label: 'Flashcard',
             fields: [
-                { name: 'card', type: 'textarea', placeholder: 'Frente::Verso (separe com ::)' }
+                { name: 'card', type: 'textarea', placeholder: 'Frente || Verso || Descrição da Imagem' },
+                { name: 'data_cadastro', type: 'text', placeholder: 'Data de Cadastro', readonly: true, hideOnCreate: true },
+                { name: 'data_last_view', type: 'text', placeholder: 'Última Visualização', readonly: true, hideOnCreate: true }
             ]
         }
     };
@@ -621,6 +588,111 @@ function applyButtonCustomization(language) {
     }
 }
 
+// Variável para controlar a fala atual
+let currentUtterance = null; 
+
+/**
+ * Lê um texto em voz alta usando a API de Síntese de Voz do navegador,
+ * buscando a voz mais natural disponível.
+ * @param {string} text - O texto a ser lido.
+ */
+function speakText(text) {
+    // Verifica se a API SpeechSynthesis é suportada
+    if (!window.speechSynthesis) {
+        console.warn("SpeechSynthesis API not supported in this browser.");
+        const ttsControlButton = document.getElementById('tts-control-btn');
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊'; // Reseta o botão
+        return;
+    }
+
+    // Para qualquer fala anterior para evitar sobreposição
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'pt-BR'; // Definir idioma para português do Brasil
+    utterance.rate = 1.0; // Velocidade normal para um som mais natural
+    utterance.pitch = 1.0; // Tom normal
+
+    const ttsControlButton = document.getElementById('tts-control-btn');
+
+    utterance.onstart = () => {
+        if (ttsControlButton) ttsControlButton.innerHTML = '🤫'; // Ícone para parar
+    };
+
+    utterance.onend = () => {
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊'; // Ícone para ouvir de novo
+    };
+    
+    utterance.onerror = (event) => {
+        console.error('Erro na síntese de voz:', event.error);
+        if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
+    };
+
+    currentUtterance = utterance;
+
+    const setVoiceAndSpeak = () => {
+        // Garante que as vozes estejam carregadas antes de tentar acessá-las
+        const voices = speechSynthesis.getVoices();
+        if (!voices || voices.length === 0) {
+            console.warn("No voices available or voices list is empty.");
+            speechSynthesis.speak(utterance); // Fallback to default if no voices
+            return;
+        }
+
+        const ptBrVoices = voices.filter(voice => voice.lang === 'pt-BR');
+        let selectedVoice = null;
+
+        // Prioriza vozes de alta qualidade conhecidas para pt-BR
+        const preferredNames = [/google/i, /natural/i, /felipe/i, /ricardo/i, /vitoria/i]; // Adicione nomes de vozes comuns em pt-BR
+        for (const name of preferredNames) {
+            selectedVoice = ptBrVoices.find(voice => name.test(voice.name));
+            if (selectedVoice) break;
+        }
+
+        // Se não encontrar, usa a padrão do navegador para o idioma
+        if (!selectedVoice) {
+            selectedVoice = ptBrVoices.find(voice => voice.default);
+        }
+
+        // Como último recurso, pega a primeira voz em português disponível
+        if (!selectedVoice && ptBrVoices.length > 0) {
+            selectedVoice = ptBrVoices[0];
+        }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+        }
+
+        speechSynthesis.speak(utterance);
+    };
+
+    // Tenta obter as vozes imediatamente. Se não estiverem disponíveis, espera por elas.
+    const initialVoices = speechSynthesis.getVoices();
+    if (initialVoices && initialVoices.length > 0) {
+        setVoiceAndSpeak();
+    } else {
+        // Se as vozes não estiverem prontas, espera que sejam carregadas
+        speechSynthesis.onvoiceschanged = () => {
+            // Remove o event listener depois que ele é disparado uma vez para evitar chamadas múltiplas
+            speechSynthesis.onvoiceschanged = null; 
+            setVoiceAndSpeak();
+        };
+    }
+}
+
+/**
+ * Para a leitura de texto que está em andamento.
+ */
+function stopSpeaking() {
+    if (window.speechSynthesis && speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+    }
+    const ttsControlButton = document.getElementById('tts-control-btn');
+    if (ttsControlButton) ttsControlButton.innerHTML = '🔊';
+}
+
 // Aguarda o DOM estar completamente carregado para executar o script
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -659,7 +731,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const appState = {
         isEditMode: false,
         currentDisciplinaId: null,
-        currentContent: [],
+        currentContent: [], // Filtered flashcards (ready for review)
+        allFlashcards: [], // All flashcards (for table view)
         currentContentType: 'video_text', // 'video_text', 'video', 'practice', ou 'flashcard'
         currentFlashcardIndex: 0, // For flashcards navigation
         isFlashcardFlipped: false // For flashcards
@@ -696,6 +769,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.currentDisciplinaId = null;
         appState.currentFlashcardIndex = 0; // Reset flashcard index
         appState.isFlashcardFlipped = false; // Reset flashcard flip state
+        appState.allFlashcards = []; // Clear all flashcards when leaving
         
         // Reaplica a personalização do dashboard baseada nas disciplinas em estudo
         loadDashboard();
@@ -848,9 +922,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const container = document.getElementById('tiled-view-container');
             if (container) {
-                // Move os elementos de volta para o body e remove o container
-                document.body.appendChild(modal);
-                document.body.appendChild(contentView);
+                 // Move content view back to main if it exists
+                const contentView = document.getElementById('content-view');
+                if(contentView) document.querySelector('main').appendChild(contentView);
                 container.remove();
             }
             // Restaura estilos inline para o modo flutuante
@@ -1372,7 +1446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Carrega os dados do dashboard inicial
     async function loadDashboard() {
         const { data: disciplinas, error } = await supabase.from('disciplina').select('*');
-        if (error || !disciplinas) {
+        if (error || !Array.isArray(disciplinas)) {
             elements.dashboardDisciplinas.innerHTML = '<div style="color:var(--danger-color);">Erro ao carregar disciplinas.</div>';
             return;
         }
@@ -1502,11 +1576,18 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const { data, error } = await supabase.from(type).select('*').eq('id_disciplina', disciplinaId);
 
-        if (error) {
+        if (error || !Array.isArray(data)) {
             console.error(`Erro ao buscar ${type}:`, error);
             appState.currentContent = [];
+            appState.allFlashcards = []; // Clear all flashcards if error
         } else {
-            appState.currentContent = data;
+            if (type === 'flashcard') {
+                appState.allFlashcards = data; // Store all flashcards
+                // Filter flashcards based on spaced repetition logic
+                appState.currentContent = data.filter(card => getSpacedRepetitionStatus(card).isReadyForReview);
+            } else {
+                appState.currentContent = data;
+            }
         }
         
         renderContent();
@@ -1533,7 +1614,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .eq('id_disciplina', String(disciplinaId))
             .eq('id_usuario', String(userId));
         console.log('Tasks retornadas:', tasks, 'Erro:', error, 'userId:', userId, 'disciplinaId:', disciplinaId);
-        if (error) {
+        if (error || !Array.isArray(tasks)) {
             elements.contentView.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Erro ao buscar tarefas.</div>`;
             appState.currentContent = [];
             return;
@@ -1635,19 +1716,44 @@ document.addEventListener('DOMContentLoaded', () => {
         if (flashcards.length === 0) {
             flashcardHtml += `
                 <div style="color:var(--danger-color); text-align:center; margin-bottom:16px;">
-                    Ainda não há flashcards para esta disciplina.
+                    Nenhum flashcard pronto para revisão no momento.
                 </div>
                 <div style="text-align:center;">
-                    <button class="add-new-flashcard-btn">➕ Adicionar Flashcard</button>
+                    <button id="view-all-flashcards-btn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Ver Todos os Flashcards</button>
                 </div>`;
+            if (isEditMode) {
+                flashcardHtml += `<div style="text-align:center; margin-top:20px;"><button class="add-new-flashcard-btn">➕ Adicionar Flashcard</button></div>`;
+            }
             elements.contentView.innerHTML = flashcardHtml;
-            elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
+            elements.contentView.querySelector('#view-all-flashcards-btn').onclick = () => {
+                renderAllFlashcardsTable(appState.allFlashcards, isEditMode, disciplinaId);
+            };
+            if (isEditMode) {
+                elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
+            }
             return;
         }
 
         const currentCard = flashcards[appState.currentFlashcardIndex];
-        const [front, back] = currentCard.card.split('::').map(s => s.trim());
+        // Split by '||' to match the new format
+        const parts = currentCard.card.split('||').map(s => s.trim());
+        const front = parts[0] || '';
+        const back = parts[1] || '';
+        const imageDesc = parts[2] || ''; // Keep image description if present
+
         const displayContent = appState.isFlashcardFlipped ? back : front;
+
+        // Update data_last_view for the current card immediately when it's rendered
+        if (currentCard && currentCard.id) {
+            supabase.from('flashcard').update({ data_last_view: new Date().toISOString() }).eq('id', currentCard.id)
+                .then(({ error }) => {
+                    if (error) console.error("Error updating data_last_view:", error);
+                    else {
+                        // Update the local object to reflect the change without re-fetching everything
+                        currentCard.data_last_view = new Date().toISOString();
+                    }
+                });
+        }
 
         flashcardHtml += `
             <div class="flashcard-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 20px;">
@@ -1659,6 +1765,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button id="flip-flashcard-btn" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Virar</button>
                     <button id="next-flashcard-btn" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Próximo</button>
                 </div>
+                <button id="view-all-flashcards-btn" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: background 0.2s;">Ver Todos os Flashcards</button>
                 ${isEditMode ? `
                     <div class="flashcard-edit-controls" style="display: flex; gap: 10px; margin-top: 20px;">
                         <button class="crud-btn edit-flashcard-btn" data-id="${currentCard.id}" style="padding: 8px 15px; background: #ffc107; color: black; border: none; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
@@ -1675,6 +1782,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const prevBtn = elements.contentView.querySelector('#prev-flashcard-btn');
         const flipBtn = elements.contentView.querySelector('#flip-flashcard-btn');
         const nextBtn = elements.contentView.querySelector('#next-flashcard-btn');
+        const viewAllBtn = elements.contentView.querySelector('#view-all-flashcards-btn');
 
         flashcardElement.onclick = () => {
             appState.isFlashcardFlipped = !appState.isFlashcardFlipped;
@@ -1694,6 +1802,9 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.isFlashcardFlipped = false;
             renderFlashcards(flashcards, isEditMode, disciplinaId);
         };
+        viewAllBtn.onclick = () => {
+            renderAllFlashcardsTable(appState.allFlashcards, isEditMode, disciplinaId);
+        };
 
         // Add event listeners for CRUD buttons if in edit mode
         if (isEditMode) {
@@ -1702,6 +1813,69 @@ document.addEventListener('DOMContentLoaded', () => {
             elements.contentView.querySelector('.add-new-flashcard-btn').onclick = () => handleCreate('flashcard', disciplinaId);
         }
     }
+
+    // NEW FUNCTION: Render all flashcards in a table
+    function renderAllFlashcardsTable(flashcards, isEditMode, disciplinaId) {
+        let html = `<button onclick="window.goBackToFlashcards()" class="close-btn" style="color:#222; top:12px; right:12px;">×</button>`;
+        if (!Array.isArray(flashcards) || flashcards.length === 0) {
+            html += `<div style='color:var(--danger-color); text-align:center; margin-bottom:16px;'>Nenhum flashcard encontrado para esta disciplina.</div>`;
+            if (isEditMode) {
+                html += `<div style='text-align:center;'><button class='add-new-flashcard-btn'>➕ Adicionar Novo Flashcard</button></div>`;
+            }
+            elements.contentView.innerHTML = html;
+            if (isEditMode) {
+                const addBtn = elements.contentView.querySelector('.add-new-flashcard-btn');
+                if (addBtn) addBtn.onclick = () => handleCreate('flashcard', disciplinaId);
+            }
+            return;
+        }
+
+        html += `
+            <h2 style='text-align:center;'>Todos os Flashcards</h2>
+            <table class='crud-table no-annotation' style='width:100%;margin-bottom:16px;'>
+                <thead>
+                    <tr>
+                        <th>Conteúdo do Flashcard</th>
+                        ${isEditMode ? '<th>Ações</th>' : ''}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${flashcards.map(card => {
+                        const fullContent = card.card;
+                        return `
+                            <tr>
+                                <td>${fullContent}</td>
+                                ${isEditMode ? `<td>
+                                    <button class='edit-flashcard-btn' data-id='${card.id}'>✏️</button>
+                                    <button class='delete-flashcard-btn' data-id='${card.id}'>🗑️</button>
+                                </td>` : ''}
+                            </tr>
+                        `;
+                    }).join('')}
+                </tbody>
+            </table>
+        `;
+        if (isEditMode) {
+            html += `<div style='text-align:center;'><button class='add-new-flashcard-btn'>➕ Adicionar Novo Flashcard</button></div>`;
+        }
+        elements.contentView.innerHTML = html;
+
+        if (isEditMode) {
+            elements.contentView.querySelectorAll('.edit-flashcard-btn').forEach(btn => {
+                btn.onclick = () => handleEdit('flashcard', btn.dataset.id);
+            });
+            elements.contentView.querySelectorAll('.delete-flashcard-btn').forEach(btn => {
+                btn.onclick = () => handleDelete('flashcard', btn.dataset.id);
+            });
+            const addBtn = elements.contentView.querySelector('.add-new-flashcard-btn');
+            if (addBtn) addBtn.onclick = () => handleCreate('flashcard', disciplinaId);
+        }
+    }
+
+    // Function to go back to single flashcard view
+    window.goBackToFlashcards = () => {
+        renderFlashcards(appState.currentContent, appState.isEditMode, appState.currentDisciplinaId);
+    };
 
     // --- MODAL DE PIZZA ---
     
@@ -1739,11 +1913,11 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderPizzaMenu() {
         elements.pizzaContainer.innerHTML = 'Carregando...';
         const { data, error } = await supabase.from('disciplina').select('*');
-        if (error || !data || data.length === 0) {
+        if (error || !Array.isArray(data) || data.length === 0) {
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Nenhuma disciplina encontrada.</div>';
             return;
         }
-        // Filtra apenas as disciplinas com situation === 'estudando' e tipo_disciplina === 'idioma'
+        // Filtra apenas as disciplinas com situation === 'estudando' (case-insensitive) e tipo_disciplina === 'idioma'
         const estudando = data.filter(d => (d.situation || '').toLowerCase() === 'estudando' && (d.tipo_disciplina || '').toLowerCase() === 'idioma');
         if (estudando.length === 0) {
             elements.pizzaContainer.innerHTML = '<div style="text-align:center;">Nenhuma disciplina em estudo.</div>';
@@ -1782,7 +1956,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function renderDisciplinaListInModal() {
         elements.pizzaContainer.innerHTML = 'Carregando...';
         const { data, error } = await supabase.from('disciplina').select('*');
-        if (error || !data) {
+        if (error || !Array.isArray(data)) {
             elements.pizzaContainer.innerHTML = '<div style="color:red; text-align:center;">Erro ao carregar disciplinas.</div>';
             return;
         }
@@ -1910,7 +2084,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     insertData = {
                         id_disciplina: disciplinaId,
                         id_usuario: userId,
-                        card: data.card
+                        card: data.card,
+                        data_cadastro: new Date().toISOString() // Set data_cadastro on creation
                     };
                 } else {
                     valid = false;
@@ -1949,7 +2124,13 @@ document.addEventListener('DOMContentLoaded', () => {
             initialData: itemData,
             language: detectedLanguage,
             onSubmit: async (data) => {
-                await supabase.from(type).update(data).eq('id', id);
+                const updateData = { ...data };
+                if (type === 'flashcard') {
+                    // data_last_view is updated on view, not necessarily on edit.
+                    // If you want to update it on edit, uncomment the line below.
+                    // updateData.data_last_view = new Date().toISOString();
+                }
+                await supabase.from(type).update(updateData).eq('id', id);
             }
         });
     }
@@ -2233,13 +2414,13 @@ async function fetchTasksForModal(disciplinaId, container) {
         return;
     }
     
+    container.innerHTML = 'Carregando tarefas...';
+    
     const userId = localStorage.getItem('user_id');
     if (!userId) {
         container.innerHTML = `<div style='color:var(--danger-color); text-align:center;'>Usuário não autenticado.</div>`;
         return;
     }
-    
-    container.innerHTML = 'Carregando tarefas...';
     
     try {
         const { data: tasks, error } = await supabase
@@ -2326,7 +2507,7 @@ function renderTasksTableForModal(tasks, disciplinaId) {
                 `).join('')}
             </tbody>
         </table>`;
-    // Botão 'Nova Tarefa' removido conforme solicitado
+    html += `<div style='text-align:center;'><button class='add-new-task-btn'>➕ Nova Tarefa</button></div>`;
     return html;
 }
 
@@ -2361,7 +2542,7 @@ async function handleCreateTaskModal(disciplinaId, container) {
                 alert('Preencha todos os campos obrigatórios.');
                 return;
             }
-            const { error } = await supabase.from('tasks').insert([{
+            await supabase.from('tasks').insert([{
                 id_disciplina: disciplinaId,
                 id_usuario: userId,
                 data_inicio: todayStr,
@@ -2369,10 +2550,6 @@ async function handleCreateTaskModal(disciplinaId, container) {
                 situacao: data.situacao,
                 nome: data.nome
             }]);
-            if (error) {
-                alert('Erro ao inserir tarefa: ' + (error.message || error));
-                return;
-            }
             await fetchTasksForModal(disciplinaId, container);
         }
     });
@@ -2502,6 +2679,16 @@ function handleTextSelection(e) {
         const selection = window.getSelection();
         const selectedText = selection.toString().trim();
 
+        // Verifica se a seleção está dentro de um elemento com a classe 'no-annotation'
+        if (selection.anchorNode && selection.anchorNode.parentElement.closest('.no-annotation')) {
+            // Se um pop-up existir de uma seleção anterior, remove-o
+            if (annotationPopup) {
+                annotationPopup.remove();
+                annotationPopup = null;
+            }
+            return; // Sai da função se a anotação estiver desabilitada para esta área
+        }
+
         // Remove pop-up anterior se existir
         if (annotationPopup) {
             annotationPopup.remove();
@@ -2566,7 +2753,8 @@ function handleTextSelection(e) {
 function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnnotation = null) {
     annotationPopup = document.createElement('div');
     annotationPopup.id = 'annotation-popup';
-    
+    annotationPopup.style.zIndex = '2000'; // Ajustado para ser menor que o modal de CRUD
+
     // Armazena o texto selecionado para uso posterior
     const selection = window.getSelection();
     const selectedText = selection.toString().trim();
@@ -2617,6 +2805,7 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
         <div class="popup-footer">
             <div class="footer-right">
                 <button id="ai-explain-btn" class="btn-ai-explain">🤖 Explicar IA</button>
+                <button id="create-flashcard-btn" class="btn-ai-explain" style="display:none;">🎴 Criar Flashcard</button>
                 <button id="cancel-annotation" class="btn-cancel">Cancelar</button>
                 ${removeButton}
                 <button id="save-annotation" class="btn-save">${saveButtonText}</button>
@@ -2643,8 +2832,8 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
 
     // Adiciona eventos aos botões do pop-up
     document.getElementById('save-annotation').onclick = saveAnnotation;
-    document.getElementById('cancel-annotation').onclick = () => { annotationPopup.remove(); stopSpeaking(); };
-    document.querySelector('.close-popup-btn').onclick = () => { annotationPopup.remove(); stopSpeaking(); };
+    document.getElementById('cancel-annotation').onclick = () => { annotationPopup.remove(); stopSpeaking(); }; // Adicionado stopSpeaking
+    document.querySelector('.close-popup-btn').onclick = () => { annotationPopup.remove(); stopSpeaking(); }; // Adicionado stopSpeaking
     
     // Adiciona evento para o botão de remover (se existir)
     const removeBtn = document.getElementById('remove-annotation');
@@ -2656,7 +2845,7 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
     document.addEventListener('click', function closeModalOnOutsideClick(e) {
         if (annotationPopup && !annotationPopup.contains(e.target)) {
             annotationPopup.remove();
-            stopSpeaking();
+            stopSpeaking(); // Adicionado stopSpeaking
             document.removeEventListener('click', closeModalOnOutsideClick);
         }
     });
@@ -2709,6 +2898,18 @@ function createAnnotationPopup(x, y, hasExistingAnnotation = false, existingAnno
                     speakText(textToSpeak);
                 }
             }
+        };
+    }
+
+    // Adiciona evento ao botão "Criar Flashcard"
+    const createFlashcardBtn = document.getElementById('create-flashcard-btn');
+    if (createFlashcardBtn) {
+        createFlashcardBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const selectedText = annotationPopup.querySelector('.selected-text-data').getAttribute('data-selected-text');
+            const aiFlashcardContent = annotationPopup.querySelector('.explanation-text').getAttribute('data-ai-flashcard-content'); // Pega o conteúdo do flashcard já formatado
+            createFlashcardFromAI(selectedText, aiFlashcardContent);
         };
     }
     
@@ -2873,7 +3074,7 @@ async function saveAnnotation() {
 
             if (error) {
                 console.error('Erro ao salvar anotação:', error);
-                alert('Falha ao salvar a anotação: ' + error.message);
+                alert('Falha ao salvar o flashcard: ' + error.message);
                 // Reverter a alteração no DOM em caso de erro
                 span.parentNode.insertBefore(document.createTextNode(selectedText), span);
                 span.remove();
@@ -2962,13 +3163,13 @@ async function loadAndApplyAnnotations(disciplinaId) {
         .select('*')
         .eq('id_disciplina', disciplinaId);
 
-    if (error) {
+    if (error || !Array.isArray(data)) {
         console.error('Erro ao carregar anotações:', error);
         return;
     }
 
     const contentView = document.getElementById('content-view');
-    if (!contentView || !data || data.length === 0) return;
+    if (!contentView || data.length === 0) return;
 
     // Cria um elemento temporário para manipular o HTML de forma mais segura
     const tempDiv = document.createElement('div');
@@ -3027,52 +3228,9 @@ async function loadAndApplyAnnotations(disciplinaId) {
 }
 
 /**
- * Gera explicação da IA para o texto selecionado
+ * Nova função: Chama a API do Gemini para gerar uma explicação DETALHADA.
  */
-async function generateAIExplanation() {
-    // Obtém o texto selecionado armazenado no modal
-    const selectedTextData = document.querySelector('.selected-text-data');
-    const selectedText = selectedTextData ? selectedTextData.getAttribute('data-selected-text') : '';
-    
-    const aiExplanationDiv = document.querySelector('.ai-explanation');
-    const explanationText = aiExplanationDiv.querySelector('.explanation-text');
-    const aiExplainBtn = document.getElementById('ai-explain-btn');
-    
-    if (!selectedText) {
-        alert('Por favor, selecione um texto primeiro.');
-        return;
-    }
-    
-    // Mostra loading
-    aiExplanationDiv.classList.add('show');
-    explanationText.innerHTML = '<div class="loading">Analisando o texto...</div>';
-    aiExplainBtn.disabled = true;
-    
-    try {
-        const explanation = await callAIExplanationAPI(selectedText);
-        
-        // Converte markdown (negrito/itálico) para HTML para exibição
-        const htmlExplanation = explanation
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/\n/g, '<br>');
-
-        explanationText.innerHTML = htmlExplanation;
-        
-        // Inicia a leitura automática com o texto puro (sem HTML)
-        speakText(explanation);
-    } catch (error) {
-        console.error('Erro ao gerar explicação:', error);
-        explanationText.innerHTML = `<p style="color: #dc3545;">Erro ao gerar explicação: ${error.message}</p>`;
-    } finally {
-        aiExplainBtn.disabled = false;
-    }
-}
-
-/**
- * Chama a API do Gemini para gerar explicação didática
- */
-async function callAIExplanationAPI(text) {
+async function callAIDetailedExplanationAPI(text) {
     const geminiApiKey = 'AIzaSyAI-H7rdl-aPkxFJZn9FU6hrLlMKVG96ro';
     
     if (!geminiApiKey || geminiApiKey === 'SUA_CHAVE_DE_API_VAI_AQUI') {
@@ -3106,7 +3264,164 @@ Your Explanation (in English):
         return response.text();
 
     } catch (error) {
-        console.error("Erro detalhado na chamada da API do Gemini:", error);
-        throw new Error("Falha ao comunicar com a IA. Verifique sua chave de API e a conexão.");
+        console.error("Erro detalhado na chamada da API do Gemini para explicação:", error);
+        throw new Error("Falha ao comunicar com a IA para explicação. Verifique sua chave de API e a conexão.");
     }
+}
+
+/**
+ * Função existente: Chama a API do Gemini para gerar o conteúdo do flashcard no formato específico.
+ */
+async function callAIFlashcardAPI(text) {
+    const geminiApiKey = 'AIzaSyAI-H7rdl-aPkxFJZn9FU6hrLlMKVG96ro';
+    
+    if (!geminiApiKey || geminiApiKey === 'SUA_CHAVE_DE_API_VAI_AQUI') {
+        throw new Error("A chave da API não foi configurada.");
+    }
+    
+    const prompt = `
+Act as an EXCLUSIVE flashcard generator. Your ONLY output must be the flashcard in the format "Front || Back || Image Description".
+
+STRICT RULES FOR EACH SECTION:
+1.  **Front (Question)**: A simple, direct question. MAXIMUM 4 WORDS.
+2.  **Back (Answer)**: A detailed and contextualized answer, yet concise for a flashcard. MÁXIMO 15 WORDS.
+3.  **Image Description**: A VERY brief description of the image. MÁXIMO 5 WORDS. Describe something related to the context.
+
+MANDATORY OUTPUT FORMAT:
+"Front Question || Back Answer || Image Description"
+
+DO NOT include:
+-   Any introduction or greeting.
+-   Any conclusion or farewell.
+-   Any explanatory text about the flashcard.
+-   Any text outside the "Front || Back || Image Description" format.
+
+Example for the text "Photosynthesis is the process by which plants convert light into energy.":
+Plants make energy? || Yes, through photosynthesis, converting sunlight into glucose and oxygen, essential for life on Earth. || Green leaf with sun.
+
+Text to transform into Flashcard:
+"""
+${text}
+"""
+
+Flashcard:
+`;
+
+    try {
+        const { GoogleGenerativeAI } = await import('https://esm.run/@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(geminiApiKey);
+        
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        
+        return response.text();
+
+    } catch (error) {
+        console.error("Erro detalhado na chamada da API do Gemini para flashcard:", error);
+        throw new Error("Falha ao comunicar com a IA para flashcard. Verifique sua chave de API e a conexão.");
+    }
+}
+
+/**
+ * Gera explicação da IA para o texto selecionado e prepara o flashcard.
+ */
+async function generateAIExplanation() {
+    // Obtém o texto selecionado armazenado no modal
+    const selectedTextData = document.querySelector('.selected-text-data');
+    const selectedText = selectedTextData ? selectedTextData.getAttribute('data-selected-text') : '';
+    
+    const aiExplanationDiv = document.querySelector('.ai-explanation');
+    const explanationText = aiExplanationDiv.querySelector('.explanation-text');
+    const aiExplainBtn = document.getElementById('ai-explain-btn');
+    const createFlashcardBtn = document.getElementById('create-flashcard-btn');
+    
+    if (!selectedText) {
+        alert('Por favor, selecione um texto primeiro.');
+        return;
+    }
+    
+    // Mostra loading para a explicação detalhada
+    aiExplanationDiv.classList.add('show');
+    explanationText.innerHTML = '<div class="loading">Gerando explicação detalhada...</div>';
+    aiExplainBtn.disabled = true;
+    if (createFlashcardBtn) createFlashcardBtn.style.display = 'none'; // Esconde enquanto carrega
+    
+    try {
+        // 1. Chama a API para gerar a explicação DETALHADA
+        const detailedExplanation = await callAIDetailedExplanationAPI(selectedText);
+        explanationText.innerHTML = detailedExplanation; // Exibe a explicação detalhada
+        
+        // 2. Agora, chama a API para gerar o conteúdo do flashcard (conciso)
+        explanationText.innerHTML += '<div class="loading" style="margin-top: 10px;">Preparando flashcard...</div>'; // Mensagem de carregamento para o flashcard
+        const flashcardContent = await callAIFlashcardAPI(selectedText);
+        
+        // Armazena o conteúdo do flashcard em um atributo de dados para uso posterior
+        explanationText.setAttribute('data-ai-flashcard-content', flashcardContent);
+        
+        // Remove a mensagem de carregamento do flashcard
+        const loadingDiv = explanationText.querySelector('.loading');
+        if (loadingDiv) loadingDiv.remove();
+
+        // Inicia a leitura automática com o texto puro da explicação detalhada
+        speakText(detailedExplanation);
+
+        // Mostra e habilita o botão de criar flashcard
+        if (createFlashcardBtn) createFlashcardBtn.style.display = 'inline-flex';
+    } catch (error) {
+        console.error('Erro ao gerar explicação ou flashcard:', error);
+        explanationText.innerHTML = `<p style="color: #dc3545;">Erro: ${error.message}</p>`;
+        if (createFlashcardBtn) createFlashcardBtn.style.display = 'none'; // Mantém escondido em caso de erro
+    } finally {
+        aiExplainBtn.disabled = false;
+    }
+}
+
+/**
+ * Cria um flashcard a partir do texto selecionado e da explicação da IA.
+ * Abre um modal para o usuário confirmar e editar antes de salvar.
+ * @param {string} selectedText - O texto selecionado pelo usuário (frente do flashcard).
+ * @param {string} aiFlashcardContent - O conteúdo do flashcard já formatado pela IA.
+ */
+async function createFlashcardFromAI(selectedText, aiFlashcardContent) {
+    const disciplinaId = window.appState.currentDisciplinaId;
+    const userId = localStorage.getItem('user_id');
+
+    if (!disciplinaId || !userId) {
+        alert('Erro: ID da disciplina ou do usuário não encontrado. Por favor, selecione uma disciplina.');
+        return;
+    }
+
+    // aiFlashcardContent já contém o conteúdo formatado "Frente || Verso || Descrição da Imagem"
+    const defaultCardContent = aiFlashcardContent;
+
+    createCrudModal({
+        title: 'Confirmar Flashcard',
+        formFields: [
+            { name: 'card', type: 'textarea', placeholder: 'Frente || Verso || Descrição da Imagem' }
+        ],
+        initialData: { card: defaultCardContent },
+        onSubmit: async (data) => {
+            if (!data.card.trim()) {
+                alert('O conteúdo do flashcard não pode estar vazio.');
+                return;
+            }
+            const { error } = await supabase.from('flashcard').insert([{
+                id_disciplina: disciplinaId,
+                id_usuario: userId,
+                card: data.card.trim(),
+                data_cadastro: new Date().toISOString() // Set data_cadastro on creation
+            }]);
+
+            if (error) {
+                console.error('Erro ao salvar flashcard:', error);
+                alert('Falha ao salvar o flashcard: ' + error.message);
+            } else {
+                alert('Flashcard salvo com sucesso!');
+                if (window.appState.currentContentType === 'flashcard') {
+                    fetchContent('flashcard', disciplinaId);
+                }
+            }
+        }
+    });
 }
